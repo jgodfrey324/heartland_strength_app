@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "675530154893",
+    "project_id": "heartland-strength-app",
+    "storage_bucket": "heartland-strength-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:675530154893:android:e5b8d81940fce559d813c4",
+        "android_client_info": {
+          "package_name": "com.example.heartlandstrengthapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDoXvD440A3Xo7j0KEgAphVNCIzgUKDwIo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
