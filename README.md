@@ -1,4 +1,4 @@
-# heartlandstrengthapp
+# Heartland Strength App
 
 A new Flutter project.
 
