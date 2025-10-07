@@ -1,6 +1,5 @@
 // App-level logic and routing
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/splash_screen.dart';
 
 class MainApp extends StatelessWidget {

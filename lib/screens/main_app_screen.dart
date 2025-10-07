@@ -58,13 +58,22 @@ class _MainAppScreenState extends State<MainAppScreen> {
     });
   }
 
-  // Screens for the tabs:
-  List<Widget> get _screens => [
-        TrainScreen(userData: _userData),
-        AnalyzeScreen(userData: _userData),
-        AnnouncementsScreen(userData: _userData),
-        ProfileScreen(userData: _userData),
-      ];
+  // Screens getter
+  List<Widget> get _screens {
+    final userId = _authService.getCurrentUserId();
+    // We not going anywhere if there's no user logged in
+    if (userId == null || _userData == null) {
+      return [const Center(child: Text('User not logged in'))];
+    }
+
+    return [
+      TrainScreen(userId: userId),
+      AnalyzeScreen(userData: _userData),
+      AnnouncementsScreen(userData: _userData),
+      ProfileScreen(userData: _userData),
+    ];
+  }
+
 
   // Titles for AppBar based on selected tab:
   String get _appBarTitle {

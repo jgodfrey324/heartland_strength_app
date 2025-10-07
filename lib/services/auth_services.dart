@@ -96,4 +96,9 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
   }
+
+  // Return the current user's UID, or null if not logged in
+  String? getCurrentUserId() {
+    return _auth.currentUser?.uid;
+  }
 }
