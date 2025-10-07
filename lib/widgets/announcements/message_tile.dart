@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'reaction_bar.dart';
 import '../../services/announcement_service.dart';
 import '../../utils/emoji_picker_util.dart';
+import '../comment_button.dart';
 
 class MessageTile extends StatelessWidget {
   final DocumentSnapshot messageDoc;
@@ -57,7 +58,7 @@ class MessageTile extends StatelessWidget {
             children: [
               // If it's someone else's message, show comment bubble first
               if (!isCurrentUser)
-                _buildCommentButton(isCurrentUser, onCommentsPressed),
+                CommentButton(onPressed: onCommentsPressed),
 
               // Message bubble
               Flexible(
@@ -89,7 +90,7 @@ class MessageTile extends StatelessWidget {
 
               // If it's current user's message, show comment bubble last
               if (isCurrentUser)
-                _buildCommentButton(isCurrentUser, onCommentsPressed),
+                CommentButton(onPressed: onCommentsPressed),
             ],
           ),
 
@@ -107,33 +108,6 @@ class MessageTile extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCommentButton(bool isCurrentUser, VoidCallback onPressed) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade300,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade400),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 3,
-              offset: const Offset(0, 2),
-            )
-          ],
-        ),
-        child: const Icon(
-          Icons.comment_outlined,
-          size: 16,
-          color: Colors.black87,
-        ),
       ),
     );
   }
