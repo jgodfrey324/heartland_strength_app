@@ -59,7 +59,7 @@ class _ReactionBarState extends State<ReactionBar> {
         return Row(
           children: reactions.map((reactionDoc) {
             final emoji = reactionDoc.id;
-            final userIds = reactionDoc['userIds'] as List<dynamic>;
+            final userIds = (reactionDoc.data() as Map<String, dynamic>?)?['userIds'] as List<dynamic>? ?? [];
             return GestureDetector(
               onTap: () => _toggleReaction(emoji),
               child: Container(

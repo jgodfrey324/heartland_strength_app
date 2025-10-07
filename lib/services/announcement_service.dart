@@ -46,30 +46,36 @@ class AnnouncementService {
         .collection('announcements')
         .doc(messageId)
         .collection('reactions')
-        .doc(user.uid);
+        .doc(emoji);
 
-    final current = await reactionRef.get();
+    final snapshot = await reactionRef.get();
 
-    if (current.exists) {
-      final existingEmoji = current.data()?['emoji'];
-
-      if (existingEmoji == emoji) {
-        // User tapped the same emoji again → remove reaction
-        await reactionRef.delete();
-      } else {
-        // User tapped a different emoji → update it
-        await reactionRef.update({
-          'emoji': emoji,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-      }
-    } else {
-      // New reaction
+    if (!snapshot.exists) {
+      // First time someone reacts with this emoji
       await reactionRef.set({
-        'userId': user.uid,
-        'emoji': emoji,
-        'timestamp': FieldValue.serverTimestamp(),
+        'userIds': [user.uid],
       });
+    } else {
+      final data = snapshot.data();
+      final List<dynamic> userIds = data?['userIds'] ?? [];
+
+      if (userIds.contains(user.uid)) {
+        // Remove reaction
+        userIds.remove(user.uid);
+      } else {
+        // Add reaction
+        userIds.add(user.uid);
+      }
+
+      await reactionRef.update({
+        'userIds': userIds,
+      });
+
+      if (userIds.isEmpty) {
+        await reactionRef.delete(); // Remove empty emoji doc
+      } else {
+        await reactionRef.update({'userIds': userIds});
+      }
     }
   }
 
