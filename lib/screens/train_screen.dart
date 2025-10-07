@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/train_service.dart';
-import '../utils/workout_utils.dart';
+import 'movement_detail_screen.dart';
 
 class TrainScreen extends StatefulWidget {
   final String userId;
@@ -84,36 +84,74 @@ class _TrainScreenState extends State<TrainScreen> {
                   ),
                   const SizedBox(height: 24),
                   Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: workoutsForSelectedDay.isEmpty
-                          ? const Center(child: Text('No workouts scheduled for this day.'))
-                          : ListView.builder(
-                              itemCount: workoutsForSelectedDay.length,
-                              itemBuilder: (context, index) {
-                                final workout = workoutsForSelectedDay[index];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(vertical: 8),
-                                  child: ListTile(
-                                    title: Text(workout.title),
-                                    subtitle: Text("Coach: ${workout.coachId}"),
-                                    onTap: () => handleWorkoutTapped(
-                                      context: context,
-                                      workout: workout,
-                                      trainService: _trainService,
-                                      mounted: mounted,
-                                    ),
+                    child: workoutsForSelectedDay.isEmpty
+                        ? const Center(child: Text('No workouts scheduled for this day.'))
+                        : ListView.builder(
+                            itemCount: workoutsForSelectedDay.length,
+                            itemBuilder: (context, index) {
+                              final workout = workoutsForSelectedDay[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Workout title box
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade100,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          workout.title,
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+
+                                      // Load & list movements
+                                      FutureBuilder(
+                                        future: _trainService.getMovementsByIds(workout.movementIds),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return const Center(child: CircularProgressIndicator());
+                                          }
+                                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                                            return const Text('No movements found');
+                                          }
+
+                                          final movements = snapshot.data!;
+                                          return Column(
+                                            children: movements.map((movement) {
+                                              return ListTile(
+                                                contentPadding: EdgeInsets.zero,
+                                                title: Text(movement.name),
+                                                trailing: const Icon(Icons.chevron_right),
+                                                onTap: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (_) => MovementDetailScreen(movement: movement),
+                                                    ),
+                                                  );
+                                                },
+                                              );
+                                            }).toList(),
+                                          );
+                                        },
+                                      ),
+                                    ],
                                   ),
-                                );
-                              },
-                            ),
-                    ),
+                                ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
