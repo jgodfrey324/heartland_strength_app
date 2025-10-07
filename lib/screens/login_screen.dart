@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_services.dart';
 import 'main_app_screen.dart';
 import 'signup_screen.dart';
 
@@ -11,8 +11,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final AuthService _authService = AuthService();
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -22,37 +25,26 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+    final (userCredential, errorMessage) = await _authService.login(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainAppScreen()),
-      );
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = _handleAuthError(e);
-      });
-    } finally {
+    if (mounted) {
       setState(() {
         _isLoading = false;
       });
-    }
-  }
 
-  String _handleAuthError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found':
-        return 'No user found with that email.';
-      case 'wrong-password':
-        return 'Incorrect password.';
-      case 'invalid-email':
-        return 'Invalid email format.';
-      default:
-        return 'Login failed: ${e.message}';
+      if (errorMessage != null) {
+        setState(() {
+          _errorMessage = errorMessage;
+        });
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainAppScreen()),
+        );
+      }
     }
   }
 

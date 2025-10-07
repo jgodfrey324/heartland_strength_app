@@ -4,7 +4,7 @@ import 'home_screen.dart';
 import 'announcements_screen.dart';
 import 'analyze_screen.dart';
 import 'profile_screen.dart';
-import 'train_page.dart';
+import 'train_screen.dart';
 
 class MainAppScreen extends StatefulWidget {
   const MainAppScreen({super.key});
@@ -60,9 +60,9 @@ class _MainAppScreenState extends State<MainAppScreen> {
 
   // Screens for the tabs:
   List<Widget> get _screens => [
-        AnnouncementsScreen(userData: _userData),
         TrainScreen(userData: _userData),
         AnalyzeScreen(userData: _userData),
+        AnnouncementsScreen(userData: _userData),
         ProfileScreen(userData: _userData),
       ];
 
@@ -70,11 +70,11 @@ class _MainAppScreenState extends State<MainAppScreen> {
   String get _appBarTitle {
     switch (_selectedIndex) {
       case 0:
-        return 'Announcements';
-      case 1:
         return 'Train';
-      case 2:
+      case 1:
         return 'Analyze';
+      case 2:
+        return 'Announcements';
       case 3:
         return 'Profile';
       default:
@@ -108,16 +108,16 @@ class _MainAppScreenState extends State<MainAppScreen> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.announcement),
-            label: 'Announcements',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.fitness_center),
             label: 'Train',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.analytics),
             label: 'Analyze',
+          ),
+              BottomNavigationBarItem(
+            icon: Icon(Icons.announcement),
+            label: 'Announcements',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

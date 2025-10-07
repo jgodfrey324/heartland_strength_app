@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_services.dart';
 import 'main_app_screen.dart';
 import 'login_screen.dart';
 
@@ -12,6 +11,8 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final AuthService _authService = AuthService();
+
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -38,55 +39,32 @@ class _SignupScreenState extends State<SignupScreen> {
       _errorMessage = null;
     });
 
-    try {
-      // 1. Create user in Firebase Auth
-      UserCredential userCred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+    final (userCred, errorMessage) = await _authService.signUp(
+      email: _emailController.text,
+      password: _passwordController.text,
+      firstName: _firstNameController.text,
+      lastName: _lastNameController.text,
+    );
 
-      // 2. Store additional info in Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
-        'firstName': firstName,
-        'lastName': lastName,
-        'createdAt': Timestamp.now(),
-      });
-
-      // 3. Navigate to main app screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainAppScreen()),
-      );
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = _handleAuthError(e);
-      });
-    } catch (e, stack) {
-      setState(() {
-        _errorMessage = 'Unexpected error: $e';
-      });
-      debugPrint('💖 💖 💖 Unexpected error: $e\n$stack');
-    } finally {
+    if (mounted) {
       setState(() {
         _isLoading = false;
       });
+
+      if (errorMessage != null) {
+        setState(() {
+          _errorMessage = errorMessage;
+        });
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainAppScreen()),
+        );
+      }
     }
   }
 
-  String _handleAuthError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'email-already-in-use':
-        return 'Email is already in use.';
-      case 'invalid-email':
-        return 'Invalid email format.';
-      case 'weak-password':
-        return 'Password should be at least 6 characters.';
-      default:
-        return 'Sign-up failed: ${e.message}';
-    }
-  }
-
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Create Account')),
