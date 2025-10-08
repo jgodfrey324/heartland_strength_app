@@ -30,7 +30,7 @@ Future<void> handleWorkoutTapped({
                 Text(movement.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(movement.description),
                 ...wm.sets.entries.map((entry) {
-                  final setData = entry.value as Map<String, dynamic>;
+                  final setData = entry.value;
                   final reps = setData['reps'];
                   final weightPercent = setData['weightPercent'];
                   return Text("• $reps reps @ $weightPercent%");
