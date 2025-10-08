@@ -34,6 +34,7 @@ class AuthService {
     required String password,
     required String firstName,
     required String lastName,
+    required String role,
   }) async {
     try {
       // 1. Create user in Firebase Auth
@@ -46,6 +47,11 @@ class AuthService {
       await _firestore.collection('users').doc(userCred.user!.uid).set({
         'firstName': firstName,
         'lastName': lastName,
+        'email': email.trim(),
+        'role': role, // "athlete" or "coach"
+        'assignedProgramIds': [],
+        'completedWorkouts': [],
+        'teamIds': [],
         'createdAt': Timestamp.now(),
       });
 

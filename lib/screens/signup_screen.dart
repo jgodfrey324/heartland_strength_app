@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_services.dart';
-import 'main_app_screen.dart';
+import 'main_app/main_app_screen.dart';
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -20,6 +20,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   bool _isLoading = false;
   String? _errorMessage;
+  String? _selectedRole; // 'athlete' or 'coach'
 
   Future<void> _signUp() async {
     final firstName = _firstNameController.text.trim();
@@ -34,6 +35,13 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
+    if (_selectedRole == null) {
+      setState(() {
+        _errorMessage = 'Please select a role: Athlete or Coach.';
+      });
+      return; // Stop signup if role not selected
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -44,6 +52,7 @@ class _SignupScreenState extends State<SignupScreen> {
       password: _passwordController.text,
       firstName: _firstNameController.text,
       lastName: _lastNameController.text,
+      role: _selectedRole!, // <-- make sure this is set to "athlete" or "coach"
     );
 
     if (mounted) {
@@ -72,6 +81,7 @@ class _SignupScreenState extends State<SignupScreen> {
         padding: const EdgeInsets.all(24),
         child: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, // align label left
             children: [
               if (_errorMessage != null)
                 Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
@@ -100,6 +110,44 @@ class _SignupScreenState extends State<SignupScreen> {
                 obscureText: true,
                 decoration: const InputDecoration(labelText: 'Password'),
               ),
+              const SizedBox(height: 24),
+
+              // Role selection field
+              const Text(
+                'Sign up as...',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Athlete'),
+                      value: 'athlete',
+                      groupValue: _selectedRole,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedRole = value;
+                        });
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Coach'),
+                      value: 'coach',
+                      groupValue: _selectedRole,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedRole = value;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 24),
 
               _isLoading
