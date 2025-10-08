@@ -8,7 +8,8 @@ Future<void> handleWorkoutTapped({
   required TrainService trainService,
   required bool mounted,
 }) async {
-  final movements = await trainService.getMovementsByIds(workout.movementIds);
+  final movementIds = workout.movements.map((m) => m.movementId).toList();
+  final movementMap = await trainService.getMovementMapByIds(movementIds);
 
   if (!mounted) return;
 
@@ -16,16 +17,29 @@ Future<void> handleWorkoutTapped({
     context: context,
     builder: (_) => AlertDialog(
       title: Text(workout.title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: movements.isEmpty
-            ? [const Text('No movements')]
-            : movements
-                .map((m) => ListTile(
-                      title: Text(m.name),
-                      subtitle: Text(m.description),
-                    ))
-                .toList(),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: workout.movements.map((wm) {
+            final movement = movementMap[wm.movementId];
+            if (movement == null) return const SizedBox.shrink();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(movement.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(movement.description),
+                ...wm.sets.entries.map((entry) {
+                  final setData = entry.value as Map<String, dynamic>;
+                  final reps = setData['reps'];
+                  final weightPercent = setData['weightPercent'];
+                  return Text("• $reps reps @ $weightPercent%");
+                }),
+                const SizedBox(height: 8),
+              ],
+            );
+          }).toList(),
+        ),
       ),
       actions: [
         TextButton(

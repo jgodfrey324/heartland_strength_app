@@ -117,34 +117,58 @@ class _TrainScreenState extends State<TrainScreen> {
 
                                       // Load & list movements
                                       FutureBuilder(
-                                        future: _trainService.getMovementsByIds(workout.movementIds),
+                                        future: _trainService.getMovementMapByIds(
+                                          workout.movements.map((m) => m.movementId).toList(),
+                                        ),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState == ConnectionState.waiting) {
                                             return const Center(child: CircularProgressIndicator());
                                           }
+
                                           if (!snapshot.hasData || snapshot.data!.isEmpty) {
                                             return const Text('No movements found');
                                           }
-
-                                          final movements = snapshot.data!;
+                                          final movementMap = snapshot.data!;
                                           return Column(
-                                            children: movements.map((movement) {
-                                              return ListTile(
-                                                contentPadding: EdgeInsets.zero,
-                                                title: Text(movement.name),
-                                                trailing: const Icon(Icons.chevron_right),
-                                                onTap: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (_) => MovementDetailScreen(movement: movement),
+                                            children: workout.movements.map((wm) {
+                                              final movement = movementMap[wm.movementId];
+                                              if (movement == null) return const SizedBox.shrink();
+
+                                              return Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  ListTile(
+                                                    contentPadding: EdgeInsets.zero,
+                                                    title: Text(movement.name),
+                                                    subtitle: Text(movement.description),
+                                                    trailing: const Icon(Icons.chevron_right),
+                                                    onTap: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (_) => MovementDetailScreen(movement: movement),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: wm.sets.entries.map((entry) {
+                                                        final setData = entry.value;
+                                                        final reps = setData['reps'];
+                                                        final weightPercent = setData['weightPercent'];
+                                                        return Text("• $reps reps @ $weightPercent%");
+                                                      }).toList(),
                                                     ),
-                                                  );
-                                                },
+                                                  ),
+                                                  const Divider(),
+                                                ],
                                               );
                                             }).toList(),
                                           );
-                                        },
+                                        }
                                       ),
                                     ],
                                   ),
