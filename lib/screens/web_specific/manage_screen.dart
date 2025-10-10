@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:heartlandstrengthapp/services/user_services.dart';
 import '../../widgets/manage_teams/add_team_sidebar.dart';
 import '../../widgets/manage_teams/teams_list.dart';
+import '../../widgets/custom_button.dart';
 
 class ManageScreen extends StatefulWidget {
   const ManageScreen({super.key});
@@ -74,10 +75,12 @@ class _ManageScreenState extends State<ManageScreen> {
           appBar: AppBar(
             title: const Text('Teams'),
             actions: [
-              TextButton.icon(
-                onPressed: _openSidebar,
-                icon: const Icon(Icons.add, color: Colors.deepPurple),
-                label: const Text('Team', style: TextStyle(color: Colors.deepPurple)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                child: CustomButton(
+                  text: '+ Team',
+                  onPressed: _openSidebar,
+                ),
               ),
             ],
           ),
@@ -107,7 +110,7 @@ class _ManageScreenState extends State<ManageScreen> {
               },
               onCancel: _closeSidebar,
               onAdd: () async {
-                await _addTeam();  // Implement _addTeam in this class or service
+                await _addTeam();
               },
             ),
           ),

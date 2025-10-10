@@ -1,5 +1,6 @@
 // Widget to handle right side bar form to add team
 import 'package:flutter/material.dart';
+import '../custom_button.dart';
 
 class AddTeamSidebar extends StatelessWidget {
   final TextEditingController teamNameController;
@@ -32,7 +33,10 @@ class AddTeamSidebar extends StatelessWidget {
             Row(
               children: [
                 const Expanded(
-                  child: Text('Add Team', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'Add Team',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -41,15 +45,15 @@ class AddTeamSidebar extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-
             TextField(
               controller: teamNameController,
               decoration: const InputDecoration(labelText: 'Team Name'),
             ),
-
             const SizedBox(height: 20),
-            const Text('Athletes:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-
+            const Text(
+              'Athletes:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 child: allUsers.isEmpty
@@ -62,15 +66,13 @@ class AddTeamSidebar extends StatelessWidget {
                           return FilterChip(
                             label: Text(user['name']),
                             selected: selected,
-                            onSelected: (val) => onToggleUserSelection(user['id']),
+                            onSelected: (_) => onToggleUserSelection(user['id']),
                           );
                         }).toList(),
                       ),
               ),
             ),
-
             const SizedBox(height: 16),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -79,9 +81,9 @@ class AddTeamSidebar extends StatelessWidget {
                   child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 16),
-                ElevatedButton(
+                CustomButton(
+                  text: 'Add',
                   onPressed: onAdd,
-                  child: const Text('Add'),
                 ),
               ],
             )
