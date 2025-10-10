@@ -61,8 +61,9 @@ class ProgramsList extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (_) => ProgramDetailsScreen(
-                        programId: doc.id,
-                        programData: data,
+                        title: data['title'] ?? 'No Title',
+                        description: data['description'] ?? '',
+                        durationWeeks: data['durationWeeks'] ?? 0,
                       ),
                     ),
                   );
