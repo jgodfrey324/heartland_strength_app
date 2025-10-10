@@ -1,104 +1,166 @@
+// Entry point for program details screen where program can be updated
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../utils/program_utils.dart';
+import '../../widgets/program_details/assigned_selectors.dart';
+import '../../widgets/program_details/week_schedule.dart';
 
-class ProgramDetailsScreen extends StatelessWidget {
-  final String title;
-  final String description;
-  final int durationWeeks;
+class ProgramDetailsScreen extends StatefulWidget {
+  final String programId;
 
-  const ProgramDetailsScreen({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.durationWeeks,
-  });
+  const ProgramDetailsScreen({super.key, required this.programId});
+
+  @override
+  State<ProgramDetailsScreen> createState() => _ProgramDetailsScreenState();
+}
+
+class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
+  String title = '';
+  String description = '';
+  int durationWeeks = 0;
+  bool isLoading = true;
+
+  List<Map<String, Object>> allUsers = [];
+  List<Map<String, Object>> allTeams = [];
+
+  Set<String> selectedTeamIds = {};
+  Set<String> manuallyAssignedUserIds = {};
+  Set<String> selectedUserIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgramData();
+  }
+
+  Future<void> _loadProgramData() async {
+    final progDoc = await FirebaseFirestore.instance
+        .collection('programs')
+        .doc(widget.programId)
+        .get();
+    final prog = progDoc.data();
+
+    final teamSnap = await FirebaseFirestore.instance.collection('teams').get();
+    final userSnap = await FirebaseFirestore.instance.collection('users').get();
+
+    allUsers = userSnap.docs.map((doc) {
+      final data = doc.data();
+      final firstName = data['firstName'] as String? ?? '';
+      final lastName = data['lastName'] as String? ?? '';
+      final fullName = ('$firstName $lastName').trim();
+
+      return <String, Object>{
+        'id': doc.id,
+        'name': fullName.isNotEmpty ? fullName : 'Unnamed User',
+        'teamIds': List<String>.from(data['teamIds'] ?? []),
+      };
+    }).toList();
+
+    allTeams = teamSnap.docs.map((doc) {
+      final data = doc.data();
+      final teamId = doc.id;
+
+      final List<dynamic> userIdsFromTeam = data['userIds'] ?? [];
+
+      return {
+        'id': teamId,
+        'name': data['name'] as String? ?? 'Unnamed Team',
+        'userIds': userIdsFromTeam.map((e) => e.toString()).toList(),
+      };
+    }).toList();
+
+    selectedTeamIds = Set<String>.from(prog?['assignedTo']?['teams'] ?? []);
+    manuallyAssignedUserIds = Set<String>.from(prog?['assignedTo']?['users'] ?? []);
+
+    selectedUserIds = computeSelectedUserIds(
+      allTeams: allTeams,
+      selectedTeamIds: selectedTeamIds,
+      manuallyAssignedUserIds: manuallyAssignedUserIds,
+    );
+
+    setState(() {
+      title = prog?['title'] as String? ?? '';
+      description = prog?['description'] as String? ?? '';
+      durationWeeks = prog?['durationWeeks'] as int? ?? 0;
+      isLoading = false;
+    });
+  }
+
+  void _onTeamToggle(String teamId) {
+    setState(() {
+      if (selectedTeamIds.contains(teamId)) {
+        selectedTeamIds.remove(teamId);
+      } else {
+        selectedTeamIds.add(teamId);
+      }
+
+      selectedUserIds = computeSelectedUserIds(
+        allTeams: allTeams,
+        selectedTeamIds: selectedTeamIds,
+        manuallyAssignedUserIds: manuallyAssignedUserIds,
+      );
+    });
+    _saveAssignment();
+  }
+
+  void _onUserToggle(String userId) {
+    setState(() {
+      if (manuallyAssignedUserIds.contains(userId)) {
+        manuallyAssignedUserIds.remove(userId);
+      } else {
+        manuallyAssignedUserIds.add(userId);
+      }
+
+      selectedUserIds = computeSelectedUserIds(
+        allTeams: allTeams,
+        selectedTeamIds: selectedTeamIds,
+        manuallyAssignedUserIds: manuallyAssignedUserIds,
+      );
+    });
+    _saveAssignment();
+  }
+
+  Future<void> _saveAssignment() async {
+    await FirebaseFirestore.instance.collection('programs').doc(widget.programId).update({
+      'assignedTo': {
+        'teams': selectedTeamIds.toList(),
+        'users': manuallyAssignedUserIds.toList(),
+      },
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Program description
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (description.isNotEmpty)
               Text(
                 description,
                 style: const TextStyle(fontSize: 16),
               ),
-              const SizedBox(height: 24),
-
-              // Weeks list
-              for (int week = 1; week <= durationWeeks; week++) ...[
-                Text(
-                  'Week $week',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-
-                // Row of 7 day blocks with labels above
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(7, (dayIndex) {
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Column(
-                          children: [
-                            Text('Day ${dayIndex + 1}'),
-                            const SizedBox(height: 4),
-                            DragTarget<String>(
-                              builder: (context, candidateData, rejectedData) {
-                                return Container(
-                                  height: 500,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade200,
-                                    border: Border.all(color: Colors.grey.shade400),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Draggable<String>(
-                                      data: 'Workout Item',
-                                      feedback: Material(
-                                        color: Colors.transparent,
-                                        child: Container(
-                                          width: 100,
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.deepPurpleAccent,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: const Text(
-                                            'Workout',
-                                            style: TextStyle(color: Colors.white),
-                                          ),
-                                        ),
-                                      ),
-                                      childWhenDragging: const Opacity(
-                                        opacity: 0.3,
-                                        child: Text('Dragging...'),
-                                      ),
-                                      child: const Text('Workout'),
-                                    ),
-                                  ),
-                                );
-                              },
-                              onAccept: (data) {
-                                // Handle dropped data here later
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-
-                const SizedBox(height: 32),
-              ],
-            ],
-          ),
+            const SizedBox(height: 24),
+            AssignedSelectors(
+              allTeams: allTeams,
+              allUsers: allUsers,
+              selectedTeamIds: selectedTeamIds,
+              selectedUserIds: selectedUserIds,
+              onTeamToggle: _onTeamToggle,
+              onUserToggle: _onUserToggle,
+            ),
+            const SizedBox(height: 32),
+            WeekSchedule(durationWeeks: durationWeeks),
+          ],
         ),
       ),
     );

@@ -1,31 +1,45 @@
 // List of current programs. Can delete from list. Clicking to get to program details screen
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:heartlandstrengthapp/widgets/programs/assigned_to_dialog.dart';
 import '../../screens/web_specific/program_details_screen.dart';
+import '../../utils/program_utils.dart';
 
 class ProgramsList extends StatelessWidget {
   const ProgramsList({super.key});
 
-  void _showAssignedDialog(BuildContext context, List assignedTo) {
+  Future<void> _showAssignedDialog(BuildContext context, Map<String, dynamic>? assignedTo) async {
+    assignedTo ??= {'users': [], 'teams': []};
+    final assignedNames = await fetchAssignedNamesWithTeamMembers(assignedTo);
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Assigned To'),
-        content: assignedTo.isEmpty
-            ? const Text('No users or teams assigned.')
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: assignedTo.map((e) => Text(e.toString())).toList(),
-              ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-        ],
-      ),
+      builder: (_) => AssignedToDialog(assignedNames: assignedNames),
     );
   }
 
-  Future<void> _deleteProgram(String id) async {
-    await FirebaseFirestore.instance.collection('programs').doc(id).delete();
+  Future<void> _deleteProgram(BuildContext context, String programId, String programTitle) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Program'),
+        content: Text('Are you sure you want to delete "$programTitle"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await FirebaseFirestore.instance.collection('programs').doc(programId).delete();
+    }
   }
 
   @override
@@ -60,11 +74,7 @@ class ProgramsList extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProgramDetailsScreen(
-                        title: data['title'] ?? 'No Title',
-                        description: data['description'] ?? '',
-                        durationWeeks: data['durationWeeks'] ?? 0,
-                      ),
+                      builder: (_) => ProgramDetailsScreen(programId: doc.id),
                     ),
                   );
                 },
@@ -75,14 +85,14 @@ class ProgramsList extends StatelessWidget {
                       message: 'Program assigned to',
                       child: IconButton(
                         icon: const Icon(Icons.group),
-                        onPressed: () => _showAssignedDialog(context, data['assignedTo'] ?? []),
+                        onPressed: () => _showAssignedDialog(context, data['assignedTo']),
                       ),
                     ),
                     Tooltip(
                       message: 'Delete Program',
                       child: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.redAccent),
-                        onPressed: () => _deleteProgram(doc.id),
+                        onPressed: () => _deleteProgram(context, doc.id, data['title'] ?? 'Untitled Program'),
                       ),
                     ),
                   ],

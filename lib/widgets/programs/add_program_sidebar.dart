@@ -34,7 +34,10 @@ class _AddProgramSidebarState extends State<AddProgramSidebar> {
       'description': descriptionController.text.trim(),
       'durationWeeks': int.tryParse(durationWeeksController.text.trim()) ?? 0,
       'createdBy': widget.createdByUserId,
-      'assignedTo': [],
+      'assignedTo': {
+        'users': [],  // empty lists initially
+        'teams': [],
+      },
       'createdAt': FieldValue.serverTimestamp(),
     });
 

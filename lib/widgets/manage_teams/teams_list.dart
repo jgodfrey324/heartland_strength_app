@@ -12,6 +12,31 @@ class TeamsList extends StatelessWidget {
     required this.toggleTeamExpansion,
   });
 
+  void _deleteTeam(BuildContext context, String teamId, String teamName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Team'),
+        content: Text('Are you sure you want to delete "$teamName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await FirebaseFirestore.instance.collection('teams').doc(teamId).delete();
+      // Optionally: remove team reference from users or handle cleanup
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -39,45 +64,68 @@ class TeamsList extends StatelessWidget {
 
             final expanded = expandedTeams[teamId] ?? false;
 
-            if (userIds.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text('No users in this team'),
-              );
-            }
-
             return ExpansionTile(
               key: PageStorageKey(teamId),
               title: Text(
                 teamName,
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
               ),
               initiallyExpanded: expanded,
               onExpansionChanged: (_) => toggleTeamExpansion(teamId),
+
+              // Custom trailing with arrow + delete button
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedRotation(
+                    turns: expanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.expand_more),
+                  ),
+                  const SizedBox(width: 24), // 👈 Adjust this value as needed
+                  Tooltip(
+                    message: 'Delete team',
+                    child: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteTeam(context, teamId, teamName),
+                    ),
+                  ),
+                ],
+              ),
+
               children: [
-                FutureBuilder<QuerySnapshot>(
-                  future: firestore
-                      .collection('users')
-                      .where(FieldPath.documentId, whereIn: userIds)
-                      .get(),
-                  builder: (context, userSnapshot) {
-                    if (userSnapshot.connectionState == ConnectionState.waiting) {
-                      return const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-                    if (!userSnapshot.hasData || userSnapshot.data!.docs.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('No users in this team'),
-                      );
-                    }
-                    final users = userSnapshot.data!.docs;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: users
-                        .map((userDoc) {
+                if (userIds.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('No users in this team'),
+                  )
+                else
+                  FutureBuilder<QuerySnapshot>(
+                    future: firestore
+                        .collection('users')
+                        .where(FieldPath.documentId, whereIn: userIds)
+                        .get(),
+                    builder: (context, userSnapshot) {
+                      if (userSnapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      if (!userSnapshot.hasData || userSnapshot.data!.docs.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('No users in this team'),
+                        );
+                      }
+
+                      final users = userSnapshot.data!.docs;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: users.map((userDoc) {
                           final firstName = userDoc['firstName'] ?? '';
                           final lastName = userDoc['lastName'] ?? '';
                           final fullName = ('$firstName $lastName').trim();
@@ -86,9 +134,9 @@ class TeamsList extends StatelessWidget {
                             child: Text(fullName.isNotEmpty ? fullName : 'Unnamed User'),
                           );
                         }).toList(),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
               ],
             );
           },
