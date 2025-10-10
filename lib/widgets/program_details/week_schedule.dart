@@ -1,10 +1,26 @@
 // Widget for week schedule structure in the program details page
 import 'package:flutter/material.dart';
+import '../custom_button.dart';
+import '../add_workout_modal.dart';
 
 class WeekSchedule extends StatelessWidget {
   final int durationWeeks;
 
   const WeekSchedule({super.key, required this.durationWeeks});
+
+  void _showAddWorkoutModal(BuildContext context, int weekIndex, int dayIndex) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.9,
+        widthFactor: 1.75,
+        child: AddWorkoutModal(weekIndex: weekIndex, dayIndex: dayIndex),
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -35,31 +51,15 @@ class WeekSchedule extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
-                                child: Draggable<String>(
-                                  data: 'Workout $weekIndex-$dayIndex',
-                                  feedback: Material(
-                                    color: Colors.transparent,
-                                    child: Container(
-                                      width: 100,
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.deepPurpleAccent,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text('Workout', style: TextStyle(color: Colors.white)),
-                                    ),
-                                  ),
-                                  childWhenDragging: const Opacity(
-                                    opacity: 0.3,
-                                    child: Text('Dragging...'),
-                                  ),
-                                  child: const Text('Workout'),
+                                child: CustomButton(
+                                  text: '+ Workout',
+                                  onPressed: () => _showAddWorkoutModal(context, weekIndex, dayIndex),
                                 ),
                               ),
                             );
                           },
                           onAccept: (data) {
-                            // TODO: Handle drop logic
+                            // TODO: Handle drop logic later
                           },
                         ),
                       ],
