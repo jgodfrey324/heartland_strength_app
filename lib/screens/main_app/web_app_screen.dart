@@ -74,7 +74,7 @@ class _WebAppScreenState extends State<WebAppScreen> {
             ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.deepPurple),
+            icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: widget.onSignOut,
             tooltip: 'Sign Out',
           ),

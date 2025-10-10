@@ -62,14 +62,8 @@ class MessageTile extends StatelessWidget {
 
               // Message bubble
               Flexible(
-                child: GestureDetector(
-                  onDoubleTap: () {
-                    EmojiPickerUtil().showEmojiPicker(
-                      context: context,
-                      onEmojiSelected: (emoji) =>
-                          _handleEmojiSelected(context, emoji),
-                    );
-                  },
+                child: EmojiPickerUtil().buildEmojiButton(
+                  onEmojiSelected: (emoji) => _handleEmojiSelected(context, emoji),
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     padding: const EdgeInsets.all(12),
@@ -87,7 +81,6 @@ class MessageTile extends StatelessWidget {
                   ),
                 ),
               ),
-
               // If it's current user's message, show comment bubble last
               if (isCurrentUser)
                 CommentButton(onPressed: onCommentsPressed),
