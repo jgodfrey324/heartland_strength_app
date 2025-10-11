@@ -159,7 +159,10 @@ class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
               onUserToggle: _onUserToggle,
             ),
             const SizedBox(height: 32),
-            WeekSchedule(durationWeeks: durationWeeks),
+            WeekSchedule(
+              durationWeeks: durationWeeks,
+              programId: widget.programId,
+            ),
           ],
         ),
       ),

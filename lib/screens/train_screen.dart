@@ -139,7 +139,7 @@ class _TrainScreenState extends State<TrainScreen> {
                                                 children: [
                                                   ListTile(
                                                     contentPadding: EdgeInsets.zero,
-                                                    title: Text(movement.name),
+                                                    title: Text(movement.title),
                                                     subtitle: Text(movement.description),
                                                     trailing: const Icon(Icons.chevron_right),
                                                     onTap: () {

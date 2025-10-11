@@ -11,7 +11,7 @@ class MovementDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(movement.name),
+        title: Text(movement.title),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -140,3 +140,17 @@ Future<Map<String, List<String>>> fetchAssignedNames(Map<String, dynamic> assign
     'teams': teamNames,
   };
 }
+
+Future<void> addWorkoutToSchedule({
+  required String programId,
+  required int weekIndex,
+  required int dayIndex,
+  required String workoutId,
+}) async {
+  final scheduleField = 'schedule.week$weekIndex.day$dayIndex';
+  final programRef = FirebaseFirestore.instance.collection('programs').doc(programId);
+
+  await programRef.update({
+    scheduleField: FieldValue.arrayUnion([workoutId]),
+  });
+}

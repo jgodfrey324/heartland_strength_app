@@ -1,35 +1,48 @@
 // Widget for week schedule structure in the program details page
+// widgets/program_details/week_schedule.dart
+
 import 'package:flutter/material.dart';
 import '../custom_button.dart';
 import '../add_workout_modal.dart';
 
 class WeekSchedule extends StatelessWidget {
   final int durationWeeks;
+  final String programId;
 
-  const WeekSchedule({super.key, required this.durationWeeks});
-
-  void _showAddWorkoutModal(BuildContext context, int weekIndex, int dayIndex) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: 0.9,
-        widthFactor: 1.75,
-        child: AddWorkoutModal(weekIndex: weekIndex, dayIndex: dayIndex),
-      ),
-    );
-  }
-
+  const WeekSchedule({
+    super.key,
+    required this.durationWeeks,
+    required this.programId,
+  });
 
   @override
   Widget build(BuildContext context) {
+    void _showAddWorkoutModal(BuildContext context, int weekIndex, int dayIndex) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => FractionallySizedBox(
+          heightFactor: 0.9,
+          widthFactor: 1.75,
+          child: AddWorkoutModal(
+            programId: programId,
+            weekIndex: weekIndex,
+            dayIndex: dayIndex,
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: List.generate(durationWeeks, (weekIndex) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Week ${weekIndex + 1}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              'Week ${weekIndex + 1}',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,

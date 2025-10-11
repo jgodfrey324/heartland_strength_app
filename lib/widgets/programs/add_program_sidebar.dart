@@ -29,15 +29,28 @@ class _AddProgramSidebarState extends State<AddProgramSidebar> {
       isLoading = true;
     });
 
+    final int durationWeeks = int.tryParse(durationWeeksController.text.trim()) ?? 0;
+
+    // Create empty schedule structure
+    final Map<String, Map<String, List>> schedule = {};
+    for (int week = 0; week < durationWeeks; week++) {
+      final Map<String, List> days = {};
+      for (int day = 0; day < 7; day++) {
+        days['day$day'] = []; // empty list of workout IDs
+      }
+      schedule['week$week'] = days;
+    }
+
     await FirebaseFirestore.instance.collection('programs').add({
       'title': titleController.text.trim(),
       'description': descriptionController.text.trim(),
-      'durationWeeks': int.tryParse(durationWeeksController.text.trim()) ?? 0,
+      'durationWeeks': durationWeeks,
       'createdBy': widget.createdByUserId,
       'assignedTo': {
-        'users': [],  // empty lists initially
+        'users': [],
         'teams': [],
       },
+      'schedule': schedule,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
@@ -47,6 +60,7 @@ class _AddProgramSidebarState extends State<AddProgramSidebar> {
 
     widget.onCancel();
   }
+
 
   @override
   Widget build(BuildContext context) {

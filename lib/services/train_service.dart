@@ -1,7 +1,9 @@
 // Handles fetching of training data for user
 import 'package:cloud_firestore/cloud_firestore.dart';
+/// --------------------
+/// Models
+/// --------------------
 
-// Workout schema
 class Workout {
   final String id;
   final String title;
@@ -17,23 +19,6 @@ class Workout {
     required this.movements,
   });
 
-  // factory Workout.fromFirestore(DocumentSnapshot doc) {
-  //   final data = doc.data() as Map<String, dynamic>;
-  //   final rawMovements = List<Map<String, dynamic>>.from(data['movements'] ?? []);
-
-  //   return Workout(
-  //     id: doc.id,
-  //     title: data['title'] ?? '',
-  //     date: DateTime(
-  //       data['date'].toDate().year,
-  //       data['date'].toDate().month,
-  //       data['date'].toDate().day,
-  //     ),
-  //     coachId: data['coachId'] ?? '',
-  //     movements: rawMovements.map((m) => WorkoutMovement.fromMap(m)).toList(),
-  //   );
-  // }
-
   factory Workout.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
@@ -44,11 +29,7 @@ class Workout {
       return Workout(
         id: doc.id,
         title: data['title'] ?? '',
-        date: DateTime(
-          data['date'].toDate().year,
-          data['date'].toDate().month,
-          data['date'].toDate().day,
-        ),
+        date: (data['date'] as Timestamp).toDate(),
         coachId: data['coachId'] ?? '',
         movements: movements,
       );
@@ -58,7 +39,30 @@ class Workout {
       rethrow;
     }
   }
+}
 
+class Movement {
+  final String id;
+  final String title;
+  final String description;
+  final String videoUrl;
+
+  Movement({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.videoUrl,
+  });
+
+  factory Movement.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Movement(
+      id: doc.id,
+      title: data['title'] ?? '',
+      description: data['description'] ?? '',
+      videoUrl: data['videoUrl'] ?? '',
+    );
+  }
 }
 
 class WorkoutMovement {
@@ -71,7 +75,7 @@ class WorkoutMovement {
   });
 
   factory WorkoutMovement.fromMap(Map<String, dynamic> map) {
-    final rawSets = map['sets'] as Map<String, dynamic>;
+    final rawSets = map['sets'] as Map<String, dynamic>? ?? {};
 
     final parsedSets = <String, Map<String, dynamic>>{};
 
@@ -79,7 +83,6 @@ class WorkoutMovement {
       if (value is Map) {
         parsedSets[key] = Map<String, dynamic>.from(value);
       } else {
-        // Log or skip invalid entries
         print("⚠️ Skipping invalid set at key $key: $value");
       }
     });
@@ -91,49 +94,53 @@ class WorkoutMovement {
   }
 }
 
+class MovementData {
+  String? movementId;
+  List<SetData> sets;
 
-class SetEntry {
-  final int reps;
-  final num weightPercent;
+  MovementData({this.movementId, required this.sets});
 
-  SetEntry({required this.reps, required this.weightPercent});
+  Map<String, dynamic> toJson() => {
+        'movementId': movementId,
+        'sets': sets.map((s) => s.toJson()).toList(),
+      };
 
-  factory SetEntry.fromMap(Map<String, dynamic> map) {
-    return SetEntry(
-      reps: map['reps'] ?? 0,
-      weightPercent: map['weightPercent'] ?? 0,
+  factory MovementData.fromMap(Map<String, dynamic> map) {
+    final setsList = (map['sets'] as List<dynamic>? ?? [])
+        .map((s) => SetData.fromMap(s as Map<String, dynamic>))
+        .toList();
+    return MovementData(
+      movementId: map['movementId'] as String?,
+      sets: setsList,
     );
   }
 }
 
-// Movement schema
-class Movement {
-  final String id;
-  final String name;
-  final String description;
-  final String? videoUrl;
+class SetData {
+  String reps;
+  String weightPercent;
 
-  Movement({
-    required this.id,
-    required this.name,
-    required this.description,
-    this.videoUrl,
-  });
+  SetData({required this.reps, required this.weightPercent});
 
-  factory Movement.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return Movement(
-      id: doc.id,
-      name: data['name'] ?? '',
-      description: data['description'] ?? '',
-      videoUrl: data['videoUrl'],
+  Map<String, dynamic> toJson() => {
+        'reps': int.tryParse(reps) ?? 0,
+        'weightPercent': double.tryParse(weightPercent) ?? 0.0,
+      };
+
+  factory SetData.fromMap(Map<String, dynamic> map) {
+    return SetData(
+      reps: (map['reps'] ?? '').toString(),
+      weightPercent: (map['weightPercent'] ?? '').toString(),
     );
   }
 }
 
-// Train service
+/// --------------------
+/// Service
+/// --------------------
+
 class TrainService {
-  final _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<Workout>> getUserWorkouts(String userId) async {
     final snapshot = await _firestore
@@ -156,5 +163,105 @@ class TrainService {
       for (var doc in snapshot.docs)
         doc.id: Movement.fromFirestore(doc),
     };
+  }
+
+  /// Loads a workout by ID returning MovementData & metadata (title, details)
+  Future<Map<String, dynamic>?> loadWorkout(String workoutId) async {
+    try {
+      final doc = await _firestore.collection('workouts').doc(workoutId).get();
+
+      if (!doc.exists) return null;
+
+      final data = doc.data()!;
+      final title = data['title'] ?? '';
+      final details = data['details'] ?? '';
+
+      final rawMovements = (data['movements'] as List<dynamic>? ?? []);
+      final movements = rawMovements
+          .map((m) => MovementData.fromMap(m as Map<String, dynamic>))
+          .toList();
+
+      return {
+        'title': title,
+        'details': details,
+        'movements': movements,
+      };
+    } catch (e) {
+      print('❌ Error loading workout $workoutId: $e');
+      return null;
+    }
+  }
+
+  /// Saves workout (new or existing) and attaches it to program schedule
+  Future<void> saveWorkoutWithSchedule({
+    String? workoutId,
+    required String title,
+    required String details,
+    required List<MovementData> movements,
+    required String programId,
+    required int weekIndex,
+    required int dayIndex,
+  }) async {
+    final workoutsRef = _firestore.collection('workouts');
+
+    final movementMaps = movements.where((m) => m.movementId != null).map((m) {
+      final sets = m.sets.where((s) => s.reps.isNotEmpty && s.weightPercent.isNotEmpty).map((s) {
+        final reps = int.tryParse(s.reps);
+        final weightPercent = double.tryParse(s.weightPercent);
+        if (reps == null || weightPercent == null) return null;
+        return {'reps': reps, 'weightPercent': weightPercent};
+      }).whereType<Map<String, dynamic>>().toList();
+
+      return {
+        'movementId': m.movementId,
+        'sets': sets,
+      };
+    }).toList();
+
+    String savedWorkoutId;
+
+    if (workoutId != null) {
+      await workoutsRef.doc(workoutId).update({
+        'title': title,
+        'details': details,
+        'movements': movementMaps,
+      });
+      savedWorkoutId = workoutId;
+    } else {
+      final doc = await workoutsRef.add({
+        'title': title,
+        'details': details,
+        'movements': movementMaps,
+      });
+      savedWorkoutId = doc.id;
+    }
+
+    // Add workout ID to program schedule array (avoid duplicates)
+    final programRef = _firestore.collection('programs').doc(programId);
+    final scheduleField = 'schedule.week$weekIndex.day$dayIndex';
+
+    await programRef.update({
+      scheduleField: FieldValue.arrayUnion([savedWorkoutId]),
+    });
+  }
+
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getAllMovements() async {
+    final snapshot = await _firestore
+        .collection('movements')
+        .limit(50)
+        .get();
+
+    return snapshot.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
+  }
+
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> searchMovements(String query) async {
+    final snapshot = await _firestore
+        .collection('movements')
+        .where('title', isGreaterThanOrEqualTo: query)
+        .where('title', isLessThanOrEqualTo: '$query\uf8ff')
+        .limit(20)
+        .get();
+
+    return snapshot.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
   }
 }
