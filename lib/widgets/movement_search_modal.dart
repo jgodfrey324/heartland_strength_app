@@ -72,7 +72,10 @@ class _MovementSearchModalState extends State<MovementSearchModal> {
                                 ? Text(data['description'])
                                 : null,
                             onTap: () {
-                              Navigator.of(context).pop(data['name']); // Just return the ID
+                              Navigator.of(context).pop({
+                                'id': doc.id,
+                                'name': data['name'] as String,
+                              });
                             },
                           );
                         },

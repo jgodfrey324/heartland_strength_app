@@ -1,7 +1,6 @@
 // Widget for week schedule structure in the program details page
-// widgets/program_details/week_schedule.dart
-
 import 'package:flutter/material.dart';
+import 'package:heartlandstrengthapp/utils/workout_utils.dart';
 import '../custom_button.dart';
 import '../add_workout_modal.dart';
 
@@ -18,18 +17,12 @@ class WeekSchedule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     void _showAddWorkoutModal(BuildContext context, int weekIndex, int dayIndex) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => FractionallySizedBox(
-          heightFactor: 0.9,
-          widthFactor: 1.75,
-          child: AddWorkoutModal(
-            programId: programId,
-            weekIndex: weekIndex,
-            dayIndex: dayIndex,
-          ),
+      showSlideInModal(
+        context,
+        AddWorkoutModal(
+          programId: programId,
+          weekIndex: weekIndex,
+          dayIndex: dayIndex,
         ),
       );
     }

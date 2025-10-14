@@ -68,28 +68,37 @@ Future<Map<String, dynamic>?> fetchWorkout(String workoutId) async {
   return doc.data();
 }
 
-/// Saves or updates a workout and returns its ID.
-Future<String> saveWorkout({
-  required String? workoutId,
-  required String title,
-  required String details,
-  required List<Map<String, dynamic>> movements,
-}) async {
-  final ref = FirebaseFirestore.instance.collection('workouts');
+void showSlideInModal(BuildContext context, Widget child) {
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      opaque: false,
+      barrierDismissible: false, // Don't close on outside tap
+      barrierColor: Colors.black54, // Optional backdrop color
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.5, // 50% width
+            height: MediaQuery.of(context).size.height,     // 100% height
+            child: Material(
+              color: Colors.white,
+              elevation: 8,
+              child: child,
+            ),
+          ),
+        );
+      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final offsetAnimation = Tween<Offset>(
+          begin: const Offset(1, 0), // Slide in from the right
+          end: Offset.zero,
+        ).animate(animation);
 
-  if (workoutId != null) {
-    await ref.doc(workoutId).update({
-      'title': title,
-      'details': details,
-      'movements': movements,
-    });
-    return workoutId;
-  } else {
-    final newDoc = await ref.add({
-      'title': title,
-      'details': details,
-      'movements': movements,
-    });
-    return newDoc.id;
-  }
+        return SlideTransition(
+          position: offsetAnimation,
+          child: child,
+        );
+      },
+    ),
+  );
 }

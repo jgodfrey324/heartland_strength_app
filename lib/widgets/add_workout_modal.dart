@@ -73,11 +73,13 @@ class _AddWorkoutModalState extends State<AddWorkoutModal> {
     });
   }
 
-  void _onMovementSelected(int movementIndex, String movementId) {
+  void _onMovementSelected(int index, String movementId, String movementName) {
     setState(() {
-      _movements[movementIndex].movementId = movementId;
+      _movements[index].movementId = movementId;
+      _movements[index].movementName = movementName;
     });
   }
+
 
   Future<void> _onSave() async {
     if (!_formKey.currentState!.validate()) return;

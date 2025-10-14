@@ -1,5 +1,5 @@
-// Handles fetching of training data for user
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// --------------------
 /// Models
 /// --------------------
@@ -96,21 +96,28 @@ class WorkoutMovement {
 
 class MovementData {
   String? movementId;
+  String? movementName; // NEW: added movementName
   List<SetData> sets;
 
-  MovementData({this.movementId, required this.sets});
+  MovementData({
+    this.movementId,
+    this.movementName,
+    required this.sets,
+  });
 
   Map<String, dynamic> toJson() => {
         'movementId': movementId,
+        'movementName': movementName,
         'sets': sets.map((s) => s.toJson()).toList(),
       };
 
-  factory MovementData.fromMap(Map<String, dynamic> map) {
+  factory MovementData.fromMap(Map<String, dynamic> map, {String? movementName}) {
     final setsList = (map['sets'] as List<dynamic>? ?? [])
         .map((s) => SetData.fromMap(s as Map<String, dynamic>))
         .toList();
     return MovementData(
       movementId: map['movementId'] as String?,
+      movementName: movementName,
       sets: setsList,
     );
   }
@@ -160,8 +167,7 @@ class TrainService {
         .get();
 
     return {
-      for (var doc in snapshot.docs)
-        doc.id: Movement.fromFirestore(doc),
+      for (var doc in snapshot.docs) doc.id: Movement.fromFirestore(doc),
     };
   }
 
@@ -177,9 +183,24 @@ class TrainService {
       final details = data['details'] ?? '';
 
       final rawMovements = (data['movements'] as List<dynamic>? ?? []);
-      final movements = rawMovements
-          .map((m) => MovementData.fromMap(m as Map<String, dynamic>))
+
+      // Extract movement IDs from workout
+      final movementIds = rawMovements
+          .map((m) => (m as Map<String, dynamic>)['movementId'] as String?)
+          .whereType<String>()
           .toList();
+
+      // Fetch movement details for those IDs (to get movementName)
+      final movementMap = await getMovementMapByIds(movementIds);
+
+      // Map raw movements to MovementData, injecting the movementName from movementMap
+      final movements = rawMovements.map((m) {
+        final map = m as Map<String, dynamic>;
+        final id = map['movementId'] as String?;
+        final name = id != null ? movementMap[id]?.title : null;
+
+        return MovementData.fromMap(map, movementName: name);
+      }).toList();
 
       return {
         'title': title,
@@ -246,11 +267,7 @@ class TrainService {
   }
 
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getAllMovements() async {
-    final snapshot = await _firestore
-        .collection('movements')
-        .limit(50)
-        .get();
-
+    final snapshot = await _firestore.collection('movements').limit(50).get();
     return snapshot.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
   }
 
