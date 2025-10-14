@@ -1,9 +1,11 @@
 // Entry point for program details screen where program can be updated
+// Entry point for program details screen where program can be updated
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../utils/program_utils.dart';
 import '../../widgets/program_details/assigned_selectors.dart';
 import '../../widgets/program_details/week_schedule.dart';
+import '../../services/train_service.dart';
 
 class ProgramDetailsScreen extends StatefulWidget {
   final String programId;
@@ -27,64 +29,47 @@ class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
   Set<String> manuallyAssignedUserIds = {};
   Set<String> selectedUserIds = {};
 
+  Map<String, Map<String, List<String>>> schedule = {};
+  Map<String, Workout> workoutsById = {};
+
+  final TrainService _trainService = TrainService();
+
   @override
   void initState() {
     super.initState();
-    _loadProgramData();
+    _loadProgramDataAndSchedule();
   }
 
-  Future<void> _loadProgramData() async {
-    final progDoc = await FirebaseFirestore.instance
-        .collection('programs')
-        .doc(widget.programId)
-        .get();
-    final prog = progDoc.data();
+  Future<void> _loadProgramDataAndSchedule() async {
+    try {
+      final programData = await fetchCompleteProgramData(widget.programId, _trainService);
 
-    final teamSnap = await FirebaseFirestore.instance.collection('teams').get();
-    final userSnap = await FirebaseFirestore.instance.collection('users').get();
+      setState(() {
+        title = programData.title;
+        description = programData.description;
+        durationWeeks = programData.durationWeeks;
 
-    allUsers = userSnap.docs.map((doc) {
-      final data = doc.data();
-      final firstName = data['firstName'] as String? ?? '';
-      final lastName = data['lastName'] as String? ?? '';
-      final fullName = ('$firstName $lastName').trim();
+        allUsers = programData.allUsers;
+        allTeams = programData.allTeams;
 
-      return <String, Object>{
-        'id': doc.id,
-        'name': fullName.isNotEmpty ? fullName : 'Unnamed User',
-        'teamIds': List<String>.from(data['teamIds'] ?? []),
-      };
-    }).toList();
+        selectedTeamIds = programData.selectedTeamIds;
+        manuallyAssignedUserIds = programData.manuallyAssignedUserIds;
+        selectedUserIds = programData.selectedUserIds;
 
-    allTeams = teamSnap.docs.map((doc) {
-      final data = doc.data();
-      final teamId = doc.id;
+        schedule = programData.schedule;
+        workoutsById = programData.workoutsById;
 
-      final List<dynamic> userIdsFromTeam = data['userIds'] ?? [];
-
-      return {
-        'id': teamId,
-        'name': data['name'] as String? ?? 'Unnamed Team',
-        'userIds': userIdsFromTeam.map((e) => e.toString()).toList(),
-      };
-    }).toList();
-
-    selectedTeamIds = Set<String>.from(prog?['assignedTo']?['teams'] ?? []);
-    manuallyAssignedUserIds = Set<String>.from(prog?['assignedTo']?['users'] ?? []);
-
-    selectedUserIds = computeSelectedUserIds(
-      allTeams: allTeams,
-      selectedTeamIds: selectedTeamIds,
-      manuallyAssignedUserIds: manuallyAssignedUserIds,
-    );
-
-    setState(() {
-      title = prog?['title'] as String? ?? '';
-      description = prog?['description'] as String? ?? '';
-      durationWeeks = prog?['durationWeeks'] as int? ?? 0;
-      isLoading = false;
-    });
+        isLoading = false;
+      });
+    } catch (e, stack) {
+      print('❌ Error loading program data and schedule: $e');
+      print(stack);
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
+
 
   void _onTeamToggle(String teamId) {
     setState(() {
@@ -162,6 +147,8 @@ class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
             WeekSchedule(
               durationWeeks: durationWeeks,
               programId: widget.programId,
+              schedule: schedule,
+              workoutsById: workoutsById,
             ),
           ],
         ),

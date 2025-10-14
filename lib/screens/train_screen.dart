@@ -155,8 +155,7 @@ class _TrainScreenState extends State<TrainScreen> {
                                                     padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
                                                     child: Column(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: wm.sets.entries.map((entry) {
-                                                        final setData = entry.value;
+                                                      children: wm.sets.map((setData) {
                                                         final reps = setData['reps'];
                                                         final weightPercent = setData['weightPercent'];
                                                         return Text("• $reps reps @ $weightPercent%");

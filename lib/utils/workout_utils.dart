@@ -30,19 +30,29 @@ Future<void> handleWorkoutTapped({
               padding: const EdgeInsets.only(bottom: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    movement.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 4),
-                  ...wm.sets.entries.map((entry) {
-                    final set = entry.value;
-                    final reps = set['reps'];
-                    final weight = set['weightPercent'];
-                    return Text("• $reps reps @ $weight%");
-                  }),
-                ],
+                children: workout.movements.map((wm) {
+                  final movement = movementMap[wm.movementId];
+                  if (movement == null) return const SizedBox.shrink();
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          movement.title,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(height: 4),
+                        ...wm.sets.map((set) {
+                          final reps = set['reps'];
+                          final weight = set['weightPercent'];
+                          return Text("• $reps reps @ $weight%");
+                        }),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             );
           }).toList(),

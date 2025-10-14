@@ -20,17 +20,29 @@ class Workout {
   });
 
   factory Workout.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>?;
+
+    if (data == null) {
+      throw Exception('Workout document ${doc.id} has no data');
+    }
 
     try {
-      final rawMovements = List<Map<String, dynamic>>.from(data['movements'] ?? []);
-      final movements = rawMovements.map((m) => WorkoutMovement.fromMap(m)).toList();
+      // movements is a List of Map<String, dynamic>
+      final rawMovements = data['movements'] as List<dynamic>? ?? [];
+
+      final movements = rawMovements.map((movementData) {
+        if (movementData is Map<String, dynamic>) {
+          return WorkoutMovement.fromMap(movementData);
+        } else {
+          throw Exception('Invalid movement data type in movements array');
+        }
+      }).toList();
 
       return Workout(
         id: doc.id,
-        title: data['title'] ?? '',
-        date: (data['date'] as Timestamp).toDate(),
-        coachId: data['coachId'] ?? '',
+        title: data['title'] as String? ?? '',
+        date: data['date'] != null ? (data['date'] as Timestamp).toDate() : DateTime.now(),
+        coachId: data['coachId'] as String? ?? '',
         movements: movements,
       );
     } catch (e, stack) {
@@ -55,19 +67,24 @@ class Movement {
   });
 
   factory Movement.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>?;
+
+    if (data == null) {
+      throw Exception('Movement document ${doc.id} has no data');
+    }
+
     return Movement(
       id: doc.id,
-      title: data['title'] ?? '',
-      description: data['description'] ?? '',
-      videoUrl: data['videoUrl'] ?? '',
+      title: data['title'] as String? ?? '',
+      description: data['description'] as String? ?? '',
+      videoUrl: data['videoUrl'] as String? ?? '',
     );
   }
 }
 
 class WorkoutMovement {
   final String movementId;
-  final Map<String, Map<String, dynamic>> sets;
+  final List<Map<String, dynamic>> sets;
 
   WorkoutMovement({
     required this.movementId,
@@ -75,20 +92,22 @@ class WorkoutMovement {
   });
 
   factory WorkoutMovement.fromMap(Map<String, dynamic> map) {
-    final rawSets = map['sets'] as Map<String, dynamic>? ?? {};
+    final rawSets = map['sets'];
+    List<Map<String, dynamic>> parsedSets = [];
 
-    final parsedSets = <String, Map<String, dynamic>>{};
-
-    rawSets.forEach((key, value) {
-      if (value is Map) {
-        parsedSets[key] = Map<String, dynamic>.from(value);
-      } else {
-        print("⚠️ Skipping invalid set at key $key: $value");
-      }
-    });
+    if (rawSets is List) {
+      // Each element should be Map<String, dynamic>
+      parsedSets = rawSets.whereType<Map<String, dynamic>>().toList();
+    } else if (rawSets is Map<String, dynamic>) {
+      // If somehow it's a map, convert it to list of maps (optional fallback)
+      parsedSets = rawSets.entries
+          .map((e) => e.value)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
 
     return WorkoutMovement(
-      movementId: map['movementId'],
+      movementId: map['movementId'] as String? ?? '',
       sets: parsedSets,
     );
   }
@@ -96,7 +115,7 @@ class WorkoutMovement {
 
 class MovementData {
   String? movementId;
-  String? movementName; // NEW: added movementName
+  String? movementName;
   List<SetData> sets;
 
   MovementData({
@@ -171,7 +190,6 @@ class TrainService {
     };
   }
 
-  /// Loads a workout by ID returning MovementData & metadata (title, details)
   Future<Map<String, dynamic>?> loadWorkout(String workoutId) async {
     try {
       final doc = await _firestore.collection('workouts').doc(workoutId).get();
@@ -179,21 +197,18 @@ class TrainService {
       if (!doc.exists) return null;
 
       final data = doc.data()!;
-      final title = data['title'] ?? '';
-      final details = data['details'] ?? '';
+      final title = data['title'] as String? ?? '';
+      final details = data['details'] as String? ?? '';
 
       final rawMovements = (data['movements'] as List<dynamic>? ?? []);
 
-      // Extract movement IDs from workout
       final movementIds = rawMovements
           .map((m) => (m as Map<String, dynamic>)['movementId'] as String?)
           .whereType<String>()
           .toList();
 
-      // Fetch movement details for those IDs (to get movementName)
       final movementMap = await getMovementMapByIds(movementIds);
 
-      // Map raw movements to MovementData, injecting the movementName from movementMap
       final movements = rawMovements.map((m) {
         final map = m as Map<String, dynamic>;
         final id = map['movementId'] as String?;
@@ -213,7 +228,6 @@ class TrainService {
     }
   }
 
-  /// Saves workout (new or existing) and attaches it to program schedule
   Future<void> saveWorkoutWithSchedule({
     String? workoutId,
     required String title,
@@ -257,7 +271,6 @@ class TrainService {
       savedWorkoutId = doc.id;
     }
 
-    // Add workout ID to program schedule array (avoid duplicates)
     final programRef = _firestore.collection('programs').doc(programId);
     final scheduleField = 'schedule.week$weekIndex.day$dayIndex';
 
@@ -280,5 +293,59 @@ class TrainService {
         .get();
 
     return snapshot.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
+  }
+
+  Future<Map<String, Map<String, List<String>>>> fetchProgramSchedule(String programId) async {
+    final doc = await _firestore.collection('programs').doc(programId).get();
+    if (!doc.exists) return {};
+
+    final data = doc.data() ?? {};
+    final scheduleRaw = data['schedule'] as Map<String, dynamic>? ?? {};
+
+    final Map<String, Map<String, List<String>>> schedule = {};
+
+    scheduleRaw.forEach((weekKey, dayMapRaw) {
+      final dayMap = dayMapRaw as Map<String, dynamic>;
+      final Map<String, List<String>> dayMapParsed = {};
+
+      dayMap.forEach((dayKey, workoutListRaw) {
+        final workouts = (workoutListRaw as List<dynamic>? ?? [])
+            .map((w) => w.toString())
+            .toList();
+        dayMapParsed[dayKey] = workouts;
+      });
+
+      schedule[weekKey] = dayMapParsed;
+    });
+
+    return schedule;
+  }
+
+  Future<Map<String, Workout>> fetchWorkoutsByIds(List<String> workoutIds) async {
+    if (workoutIds.isEmpty) return {};
+
+    const batchSize = 10;
+    final batches = <List<String>>[];
+    for (var i = 0; i < workoutIds.length; i += batchSize) {
+      batches.add(workoutIds.sublist(
+        i,
+        (i + batchSize > workoutIds.length) ? workoutIds.length : i + batchSize,
+      ));
+    }
+
+    final Map<String, Workout> workoutsMap = {};
+
+    for (final batch in batches) {
+      final snapshot = await _firestore
+          .collection('workouts')
+          .where(FieldPath.documentId, whereIn: batch)
+          .get();
+
+      for (final doc in snapshot.docs) {
+        workoutsMap[doc.id] = Workout.fromFirestore(doc);
+      }
+    }
+
+    return workoutsMap;
   }
 }

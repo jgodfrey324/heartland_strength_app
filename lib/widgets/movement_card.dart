@@ -79,7 +79,6 @@ class MovementCard extends StatelessWidget {
 
               // Sets inputs
               ...movement.sets.asMap().entries.map((entry) {
-                final setIndex = entry.key;
                 final set = entry.value;
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
