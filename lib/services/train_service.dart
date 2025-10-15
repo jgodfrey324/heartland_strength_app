@@ -360,4 +360,49 @@ class TrainService {
 
     return workoutsMap;
   }
+
+  Future<void> updateScheduleOnDrop({
+    required String programId,
+    required Map<String, Map<String, List<String>>> currentSchedule,
+    required String workoutId,
+    required int fromWeek,
+    required int fromDay,
+    required int toWeek,
+    required int toDay,
+    required void Function(Map<String, Map<String, List<String>>>) onLocalUpdate,
+  }) async {
+    final fromWeekKey = 'week$fromWeek';
+    final toWeekKey = 'week$toWeek';
+    final fromDayKey = 'day$fromDay';
+    final toDayKey = 'day$toDay';
+
+    // Create mutable copies of the schedule maps
+    final updatedSchedule = Map<String, Map<String, List<String>>>.from(currentSchedule);
+
+    updatedSchedule[fromWeekKey] = Map<String, List<String>>.from(updatedSchedule[fromWeekKey] ?? {});
+    updatedSchedule[toWeekKey] = Map<String, List<String>>.from(updatedSchedule[toWeekKey] ?? {});
+
+    final fromDayList = List<String>.from(updatedSchedule[fromWeekKey]?[fromDayKey] ?? []);
+    final toDayList = List<String>.from(updatedSchedule[toWeekKey]?[toDayKey] ?? []);
+
+    fromDayList.remove(workoutId);
+    toDayList.add(workoutId);
+
+    updatedSchedule[fromWeekKey]![fromDayKey] = fromDayList;
+    updatedSchedule[toWeekKey]![toDayKey] = toDayList;
+
+    // Callback to update local UI state
+    onLocalUpdate(updatedSchedule);
+
+    // Update Firestore
+    final programRef = _firestore.collection('programs').doc(programId);
+    final batch = _firestore.batch();
+
+    batch.update(programRef, {
+      'schedule.$fromWeekKey.$fromDayKey': fromDayList,
+      'schedule.$toWeekKey.$toDayKey': toDayList,
+    });
+
+    await batch.commit();
+  }
 }

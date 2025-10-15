@@ -5,12 +5,10 @@ import 'package:heartlandstrengthapp/widgets/workout_card.dart';
 import '../add_workout_modal.dart';
 import '../../services/train_service.dart';
 
-class WeekSchedule extends StatelessWidget {
+class WeekSchedule extends StatefulWidget {
   final int durationWeeks;
   final String programId;
   final Map<String, Map<String, List<String>>> schedule;
-
-  /// Map of all workouts keyed by workoutId to display titles
   final Map<String, Workout> workoutsById;
 
   const WeekSchedule({
@@ -21,11 +19,25 @@ class WeekSchedule extends StatelessWidget {
     required this.workoutsById,
   });
 
+  @override
+  State<WeekSchedule> createState() => _WeekScheduleState();
+}
+
+class _WeekScheduleState extends State<WeekSchedule> {
+  final TrainService _trainService = TrainService();
+  late Map<String, Map<String, List<String>>> _schedule;
+
+  @override
+  void initState() {
+    super.initState();
+    _schedule = Map.from(widget.schedule);
+  }
+
   void _showAddWorkoutModal(BuildContext context, int weekIndex, int dayIndex) {
     showSlideInModal(
       context,
       AddWorkoutModal(
-        programId: programId,
+        programId: widget.programId,
         weekIndex: weekIndex,
         dayIndex: dayIndex,
       ),
@@ -35,9 +47,9 @@ class WeekSchedule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: List.generate(durationWeeks, (weekIndex) {
+      children: List.generate(widget.durationWeeks, (weekIndex) {
         final weekKey = 'week$weekIndex';
-        final weekSchedule = schedule[weekKey] ?? {};
+        final weekSchedule = _schedule[weekKey] ?? {};
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +66,7 @@ class WeekSchedule extends StatelessWidget {
                 final workoutIdsForDay = weekSchedule[dayKey] ?? [];
 
                 final workoutsForDay = workoutIdsForDay
-                    .map((id) => workoutsById[id])
+                    .map((id) => widget.workoutsById[id])
                     .whereType<Workout>()
                     .toList();
 
@@ -66,44 +78,107 @@ class WeekSchedule extends StatelessWidget {
                         Text('Day ${dayIndex + 1}'),
                         const SizedBox(height: 4),
 
-                        // The rectangle container with min height 500
-                        Container(
-                          constraints: const BoxConstraints(minHeight: 500),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade400),
-                            borderRadius: BorderRadius.circular(8),
-                            color: Colors.white,
-                          ),
-                          child: workoutsForDay.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    'No workouts',
-                                    style: TextStyle(color: Colors.grey.shade600),
-                                  ),
-                                )
-                              : WorkoutCard(
-                                  workouts: workoutsForDay,
-                                  onWorkoutTap: (workout) => handleWorkoutTapped(
-                                    context: context,
-                                    workout: workout,
-                                    trainService: TrainService(),
-                                    mounted: true,
-                                  ),
+                        // DragTarget wraps the entire container
+                        DragTarget<Map<String, dynamic>>(
+                          onWillAccept: (data) => data != null,
+                          onAccept: (data) async {
+                            final workoutId = data['workoutId'] as String;
+                            final fromWeek = data['fromWeek'] as int;
+                            final fromDay = data['fromDay'] as int;
+
+                            if (fromWeek != weekIndex || fromDay != dayIndex) {
+                              await _trainService.updateScheduleOnDrop(
+                                programId: widget.programId,
+                                currentSchedule: _schedule,
+                                workoutId: workoutId,
+                                fromWeek: fromWeek,
+                                fromDay: fromDay,
+                                toWeek: weekIndex,
+                                toDay: dayIndex,
+                                onLocalUpdate: (updatedSchedule) {
+                                  setState(() {
+                                    _schedule = updatedSchedule;
+                                  });
+                                },
+                              );
+                            }
+                          },
+                          builder: (context, candidateData, rejectedData) {
+                            return Container(
+                              constraints: const BoxConstraints(minHeight: 500),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: candidateData.isNotEmpty
+                                      ? Colors.blueAccent
+                                      : Colors.grey.shade400,
+                                  width: candidateData.isNotEmpty ? 3 : 1,
                                 ),
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.white,
+                              ),
+                              child: workoutsForDay.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        'No workouts',
+                                        style: TextStyle(color: Colors.grey.shade600),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: workoutsForDay.length,
+                                      itemBuilder: (context, index) {
+                                        final workout = workoutsForDay[index];
+                                        final workoutId = workoutIdsForDay[index];
+                                        return LongPressDraggable<Map<String, dynamic>>(
+                                          data: {
+                                            'workoutId': workoutId,
+                                            'fromWeek': weekIndex,
+                                            'fromDay': dayIndex,
+                                          },
+                                          feedback: Material(
+                                            elevation: 4,
+                                            child: Container(
+                                              width: 200,
+                                              child: WorkoutCard(
+                                                workouts: [workout],
+                                                onWorkoutTap: (_) {},
+                                              ),
+                                            ),
+                                          ),
+                                          childWhenDragging: Opacity(
+                                            opacity: 0.5,
+                                            child: WorkoutCard(
+                                              workouts: [workout],
+                                              onWorkoutTap: (w) => handleWorkoutTapped(
+                                                context: context,
+                                                workout: w,
+                                                trainService: TrainService(),
+                                                mounted: true,
+                                              ),
+                                            ),
+                                          ),
+                                          child: WorkoutCard(
+                                            workouts: [workout],
+                                            onWorkoutTap: (w) => handleWorkoutTapped(
+                                              context: context,
+                                              workout: w,
+                                              trainService: TrainService(),
+                                              mounted: true,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 8),
 
-                        DragTarget<String>(
-                          builder: (context, candidateData, rejectedData) {
-                            return ElevatedButton(
-                              onPressed: () => _showAddWorkoutModal(context, weekIndex, dayIndex),
-                              child: const Text('+ Workout'),
-                            );
-                          },
-                          onAccept: (data) {
-                            // TODO: Handle drop logic later if needed
-                          },
+                        ElevatedButton(
+                          onPressed: () => _showAddWorkoutModal(context, weekIndex, dayIndex),
+                          child: const Text('+ Workout'),
                         ),
                       ],
                     ),
