@@ -1,24 +1,13 @@
 // Widget for week schedule structure in the program details page
 import 'package:flutter/material.dart';
 import 'package:heartlandstrengthapp/utils/workout_utils.dart';
-import '../custom_button.dart';
+import 'package:heartlandstrengthapp/widgets/workout_card.dart';
 import '../add_workout_modal.dart';
 import '../../services/train_service.dart';
 
 class WeekSchedule extends StatelessWidget {
   final int durationWeeks;
   final String programId;
-
-  /// The program schedule map from Firestore
-  /// Example:
-  /// {
-  ///   'week0': {
-  ///     'day0': ['workoutId1', 'workoutId2'],
-  ///     'day1': [],
-  ///     ...
-  ///   },
-  ///   'week1': { ... }
-  /// }
   final Map<String, Map<String, List<String>>> schedule;
 
   /// Map of all workouts keyed by workoutId to display titles
@@ -64,7 +53,6 @@ class WeekSchedule extends StatelessWidget {
                 final dayKey = 'day$dayIndex';
                 final workoutIdsForDay = weekSchedule[dayKey] ?? [];
 
-                // Get Workout objects from IDs
                 final workoutsForDay = workoutIdsForDay
                     .map((id) => workoutsById[id])
                     .whereType<Workout>()
@@ -78,34 +66,39 @@ class WeekSchedule extends StatelessWidget {
                         Text('Day ${dayIndex + 1}'),
                         const SizedBox(height: 4),
 
-                        // Display each workout on this day
-                        if (workoutsForDay.isNotEmpty)
-                          ...workoutsForDay.map((workout) {
-                            return GestureDetector(
-                              onTap: () => handleWorkoutTapped(
-                                context: context,
-                                workout: workout,
-                                trainService: TrainService(),
-                                mounted: true,
-                              ),
-                              child: Card(
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(workout.title),
+                        // The rectangle container with min height 500
+                        Container(
+                          constraints: const BoxConstraints(minHeight: 500),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade400),
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white,
+                          ),
+                          child: workoutsForDay.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No workouts',
+                                    style: TextStyle(color: Colors.grey.shade600),
+                                  ),
+                                )
+                              : WorkoutCard(
+                                  workouts: workoutsForDay,
+                                  onWorkoutTap: (workout) => handleWorkoutTapped(
+                                    context: context,
+                                    workout: workout,
+                                    trainService: TrainService(),
+                                    mounted: true,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
+                        ),
 
                         const SizedBox(height: 8),
 
-                        // Always show the + Workout button below workouts
                         DragTarget<String>(
                           builder: (context, candidateData, rejectedData) {
-                            return CustomButton(
-                              text: '+ Workout',
+                            return ElevatedButton(
                               onPressed: () => _showAddWorkoutModal(context, weekIndex, dayIndex),
+                              child: const Text('+ Workout'),
                             );
                           },
                           onAccept: (data) {

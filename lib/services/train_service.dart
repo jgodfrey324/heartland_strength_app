@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Workout {
   final String id;
   final String title;
+  final String details;
   final DateTime date;
   final String coachId;
   final List<WorkoutMovement> movements;
@@ -14,6 +15,7 @@ class Workout {
   Workout({
     required this.id,
     required this.title,
+    required this.details,
     required this.date,
     required this.coachId,
     required this.movements,
@@ -41,6 +43,7 @@ class Workout {
       return Workout(
         id: doc.id,
         title: data['title'] as String? ?? '',
+        details: data['details'] as String? ?? '',
         date: data['date'] != null ? (data['date'] as Timestamp).toDate() : DateTime.now(),
         coachId: data['coachId'] as String? ?? '',
         movements: movements,
@@ -84,10 +87,12 @@ class Movement {
 
 class WorkoutMovement {
   final String movementId;
+  final String movementName;
   final List<Map<String, dynamic>> sets;
 
   WorkoutMovement({
     required this.movementId,
+    required this.movementName,
     required this.sets,
   });
 
@@ -108,6 +113,7 @@ class WorkoutMovement {
 
     return WorkoutMovement(
       movementId: map['movementId'] as String? ?? '',
+      movementName: map['movementName'] as String? ?? '',  // get movementName safely
       sets: parsedSets,
     );
   }
@@ -143,20 +149,20 @@ class MovementData {
 }
 
 class SetData {
-  String reps;
-  String weightPercent;
+  String? reps;
+  String? weightPercent;
 
-  SetData({required this.reps, required this.weightPercent});
+  SetData({this.reps, this.weightPercent});
 
   Map<String, dynamic> toJson() => {
-        'reps': int.tryParse(reps) ?? 0,
-        'weightPercent': double.tryParse(weightPercent) ?? 0.0,
+        'reps': int.tryParse(reps ?? '') ?? 0,
+        'weightPercent': double.tryParse(weightPercent ?? '') ?? 0.0,
       };
 
   factory SetData.fromMap(Map<String, dynamic> map) {
     return SetData(
-      reps: (map['reps'] ?? '').toString(),
-      weightPercent: (map['weightPercent'] ?? '').toString(),
+      reps: map['reps']?.toString(),
+      weightPercent: map['weightPercent']?.toString(),
     );
   }
 }
@@ -239,19 +245,25 @@ class TrainService {
   }) async {
     final workoutsRef = _firestore.collection('workouts');
 
-    final movementMaps = movements.where((m) => m.movementId != null).map((m) {
-      final sets = m.sets.where((s) => s.reps.isNotEmpty && s.weightPercent.isNotEmpty).map((s) {
-        final reps = int.tryParse(s.reps);
-        final weightPercent = double.tryParse(s.weightPercent);
-        if (reps == null || weightPercent == null) return null;
-        return {'reps': reps, 'weightPercent': weightPercent};
-      }).whereType<Map<String, dynamic>>().toList();
+    final movementMaps = movements
+      .where((m) => m.movementId!.isNotEmpty)
+      .map((m) {
+        final sets = m.sets.map((s) {
+          final reps = int.tryParse(s.reps ?? '');
+          final weightPercent = double.tryParse(s.weightPercent ?? '');
 
-      return {
-        'movementId': m.movementId,
-        'sets': sets,
-      };
-    }).toList();
+          return {
+            'reps': reps ?? 0,
+            'weightPercent': weightPercent ?? 0.0,
+          };
+        }).toList();
+
+        return {
+          'movementId': m.movementId,
+          'movementName': m.movementName,
+          'sets': sets,
+        };
+      }).toList();
 
     String savedWorkoutId;
 
