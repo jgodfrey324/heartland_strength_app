@@ -1,6 +1,4 @@
 // Entry point for program details screen where program can be updated
-// Entry point for program details screen where program can be updated
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../utils/program_utils.dart';
 import '../../widgets/program_details/assigned_selectors.dart';
@@ -106,12 +104,11 @@ class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
   }
 
   Future<void> _saveAssignment() async {
-    await FirebaseFirestore.instance.collection('programs').doc(widget.programId).update({
-      'assignedTo': {
-        'teams': selectedTeamIds.toList(),
-        'users': manuallyAssignedUserIds.toList(),
-      },
-    });
+    await _trainService.assignProgramToTeamsAndUsers(
+      programId: widget.programId,
+      teamIds: selectedTeamIds.toList(),
+      userIds: manuallyAssignedUserIds.toList(),
+    );
   }
 
   @override

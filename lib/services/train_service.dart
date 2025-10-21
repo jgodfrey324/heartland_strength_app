@@ -405,4 +405,17 @@ class TrainService {
 
     await batch.commit();
   }
+
+  Future<void> assignProgramToTeamsAndUsers({
+    required String programId,
+    required List<String> teamIds,
+    required List<String> userIds,
+  }) async {
+    await _firestore.collection('programs').doc(programId).update({
+      'assignedTo': {
+        'teams': teamIds,
+        'users': userIds,
+      },
+    });
+  }
 }

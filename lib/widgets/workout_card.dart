@@ -3,115 +3,80 @@ import 'package:heartlandstrengthapp/services/train_service.dart';
 
 typedef WorkoutTapCallback = void Function(Workout workout);
 
-class WorkoutCard extends StatefulWidget {
-  final List<Workout> workouts;
+class WorkoutCard extends StatelessWidget {
+  final Workout workout;
   final WorkoutTapCallback? onWorkoutTap;
 
   const WorkoutCard({
     Key? key,
-    required this.workouts,
+    required this.workout,
     this.onWorkoutTap,
   }) : super(key: key);
 
   @override
-  State<WorkoutCard> createState() => _WorkoutCardState();
-}
-
-class _WorkoutCardState extends State<WorkoutCard> {
-  late final ScrollController _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 450,
-      child: Scrollbar(
-        controller: _scrollController,
-        thumbVisibility: true,
-        child: ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(8),
-          itemCount: widget.workouts.length,
-          itemBuilder: (context, index) {
-            final workout = widget.workouts[index];
+    return GestureDetector(
+      onTap: () => onWorkoutTap?.call(workout),
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              Text(
+                workout.title,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
 
-            return GestureDetector(
-              onTap: () => widget.onWorkoutTap?.call(workout),
-              child: Card(
-                margin: const EdgeInsets.symmetric(vertical: 6),
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 6),
+
+              // Description
+              if (workout.details.isNotEmpty)
+                Text(
+                  workout.details,
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
+
+              const SizedBox(height: 12),
+
+              // Movements List
+              ...workout.movements.asMap().entries.map((entry) {
+                final movementIndex = entry.key;
+                final wm = entry.value;
+                final movementTitle = wm.movementName.isNotEmpty
+                    ? wm.movementName
+                    : 'Movement ${movementIndex + 1}';
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title
                       Text(
-                        workout.title,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        '${movementIndex + 1}. $movementTitle',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-
-                      const SizedBox(height: 6),
-
-                      // Description
-                      if (workout.details.isNotEmpty)
-                        Text(
-                          workout.details,
-                          style: const TextStyle(fontSize: 14, color: Colors.black87),
-                        ),
-
-                      const SizedBox(height: 12),
-
-                      // Movements List
-                      ...workout.movements.asMap().entries.map((entry) {
-                        final movementIndex = entry.key;
-                        final wm = entry.value;
-                        final movementTitle = wm.movementName.isNotEmpty
-                            ? wm.movementName
-                            : 'Movement ${movementIndex + 1}';
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${movementIndex + 1}. $movementTitle',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 4),
-                              ...wm.sets.map((set) {
-                                final reps = set['reps'] ?? '-';
-                                final weightPercent = set['weightPercent'] ?? '-';
-                                return Text(
-                                  '• $reps reps @ $weightPercent%',
-                                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                                );
-                              }).toList(),
-                            ],
-                          ),
+                      const SizedBox(height: 4),
+                      ...wm.sets.map((set) {
+                        final reps = set['reps'] ?? '-';
+                        final weightPercent = set['weightPercent'] ?? '-';
+                        return Text(
+                          '• $reps reps @ $weightPercent%',
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
                         );
                       }).toList(),
                     ],
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              }).toList(),
+            ],
+          ),
         ),
       ),
     );

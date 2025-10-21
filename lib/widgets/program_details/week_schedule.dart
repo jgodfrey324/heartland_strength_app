@@ -44,6 +44,23 @@ class _WeekScheduleState extends State<WeekSchedule> {
     );
   }
 
+  void _showEditWorkoutModal({
+    required BuildContext context,
+    required int weekIndex,
+    required int dayIndex,
+    required String workoutId,
+  }) {
+    showSlideInModal(
+      context,
+      AddWorkoutModal(
+        programId: widget.programId,
+        weekIndex: weekIndex,
+        dayIndex: dayIndex,
+        existingWorkoutId: workoutId,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -141,30 +158,35 @@ class _WeekScheduleState extends State<WeekSchedule> {
                                             child: Container(
                                               width: 200,
                                               child: WorkoutCard(
-                                                workouts: [workout],
-                                                onWorkoutTap: (_) {},
+                                                workout: workout,
+                                                onWorkoutTap: (_) => _showEditWorkoutModal(
+                                                  context: context,
+                                                  weekIndex: weekIndex,
+                                                  dayIndex: dayIndex,
+                                                  workoutId: workout.id,
+                                                ),
                                               ),
                                             ),
                                           ),
                                           childWhenDragging: Opacity(
                                             opacity: 0.5,
                                             child: WorkoutCard(
-                                              workouts: [workout],
-                                              onWorkoutTap: (w) => handleWorkoutTapped(
+                                              workout: workout,
+                                              onWorkoutTap: (_) => _showEditWorkoutModal(
                                                 context: context,
-                                                workout: w,
-                                                trainService: TrainService(),
-                                                mounted: true,
+                                                weekIndex: weekIndex,
+                                                dayIndex: dayIndex,
+                                                workoutId: workout.id,
                                               ),
                                             ),
                                           ),
                                           child: WorkoutCard(
-                                            workouts: [workout],
-                                            onWorkoutTap: (w) => handleWorkoutTapped(
+                                            workout: workout,
+                                            onWorkoutTap: (_) => _showEditWorkoutModal(
                                               context: context,
-                                              workout: w,
-                                              trainService: TrainService(),
-                                              mounted: true,
+                                              weekIndex: weekIndex,
+                                              dayIndex: dayIndex,
+                                              workoutId: workout.id,
                                             ),
                                           ),
                                         );
