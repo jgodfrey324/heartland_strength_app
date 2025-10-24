@@ -1,4 +1,4 @@
-// Modal to show assigned teams and users (for programs)
+// Modal to show assigned teams and users (for libraries)
 import 'package:flutter/material.dart';
 
 class AssignedToDialog extends StatelessWidget {

@@ -49,7 +49,7 @@ class AuthService {
         'lastName': lastName,
         'email': email.trim(),
         'role': role, // "athlete" or "coach"
-        'assignedProgramIds': [],
+        'assignedLibraryIds': [],
         'completedWorkouts': [],
         'teamIds': [],
         'createdAt': Timestamp.now(),

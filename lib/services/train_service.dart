@@ -239,7 +239,7 @@ class TrainService {
     required String title,
     required String details,
     required List<MovementData> movements,
-    required String programId,
+    required String libraryId,
     required int weekIndex,
     required int dayIndex,
   }) async {
@@ -283,10 +283,10 @@ class TrainService {
       savedWorkoutId = doc.id;
     }
 
-    final programRef = _firestore.collection('programs').doc(programId);
+    final libraryRef = _firestore.collection('libraries').doc(libraryId);
     final scheduleField = 'schedule.week$weekIndex.day$dayIndex';
 
-    await programRef.update({
+    await libraryRef.update({
       scheduleField: FieldValue.arrayUnion([savedWorkoutId]),
     });
   }
@@ -307,8 +307,8 @@ class TrainService {
     return snapshot.docs.cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
   }
 
-  Future<Map<String, Map<String, List<String>>>> fetchProgramSchedule(String programId) async {
-    final doc = await _firestore.collection('programs').doc(programId).get();
+  Future<Map<String, Map<String, List<String>>>> fetchLibrarySchedule(String libraryId) async {
+    final doc = await _firestore.collection('libraries').doc(libraryId).get();
     if (!doc.exists) return {};
 
     final data = doc.data() ?? {};
@@ -362,7 +362,7 @@ class TrainService {
   }
 
   Future<void> updateScheduleOnDrop({
-    required String programId,
+    required String libraryId,
     required Map<String, Map<String, List<String>>> currentSchedule,
     required String workoutId,
     required int fromWeek,
@@ -395,10 +395,10 @@ class TrainService {
     onLocalUpdate(updatedSchedule);
 
     // Update Firestore
-    final programRef = _firestore.collection('programs').doc(programId);
+    final libraryRef = _firestore.collection('libraries').doc(libraryId);
     final batch = _firestore.batch();
 
-    batch.update(programRef, {
+    batch.update(libraryRef, {
       'schedule.$fromWeekKey.$fromDayKey': fromDayList,
       'schedule.$toWeekKey.$toDayKey': toDayList,
     });
@@ -406,12 +406,12 @@ class TrainService {
     await batch.commit();
   }
 
-  Future<void> assignProgramToTeamsAndUsers({
-    required String programId,
+  Future<void> assignLibraryToTeamsAndUsers({
+    required String libraryId,
     required List<String> teamIds,
     required List<String> userIds,
   }) async {
-    await _firestore.collection('programs').doc(programId).update({
+    await _firestore.collection('libraries').doc(libraryId).update({
       'assignedTo': {
         'teams': teamIds,
         'users': userIds,

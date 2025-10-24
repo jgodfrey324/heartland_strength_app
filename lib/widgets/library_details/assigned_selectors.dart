@@ -1,4 +1,4 @@
-// Widget for assigned teams and athletes to programs
+// Widget for assigned teams and athletes to libraries
 import 'package:flutter/material.dart';
 
 class AssignedSelectors extends StatelessWidget {

@@ -1,4 +1,4 @@
-// Widget for week schedule structure in the program details page
+// Widget for week schedule structure in the library details page
 import 'package:flutter/material.dart';
 import 'package:heartlandstrengthapp/utils/workout_utils.dart';
 import 'package:heartlandstrengthapp/widgets/workout_card.dart';
@@ -7,14 +7,14 @@ import '../../services/train_service.dart';
 
 class WeekSchedule extends StatefulWidget {
   final int durationWeeks;
-  final String programId;
+  final String libraryId;
   final Map<String, Map<String, List<String>>> schedule;
   final Map<String, Workout> workoutsById;
 
   const WeekSchedule({
     super.key,
     required this.durationWeeks,
-    required this.programId,
+    required this.libraryId,
     required this.schedule,
     required this.workoutsById,
   });
@@ -37,7 +37,7 @@ class _WeekScheduleState extends State<WeekSchedule> {
     showSlideInModal(
       context,
       AddWorkoutModal(
-        programId: widget.programId,
+        libraryId: widget.libraryId,
         weekIndex: weekIndex,
         dayIndex: dayIndex,
       ),
@@ -53,7 +53,7 @@ class _WeekScheduleState extends State<WeekSchedule> {
     showSlideInModal(
       context,
       AddWorkoutModal(
-        programId: widget.programId,
+        libraryId: widget.libraryId,
         weekIndex: weekIndex,
         dayIndex: dayIndex,
         existingWorkoutId: workoutId,
@@ -105,7 +105,7 @@ class _WeekScheduleState extends State<WeekSchedule> {
 
                             if (fromWeek != weekIndex || fromDay != dayIndex) {
                               await _trainService.updateScheduleOnDrop(
-                                programId: widget.programId,
+                                libraryId: widget.libraryId,
                                 currentSchedule: _schedule,
                                 workoutId: workoutId,
                                 fromWeek: fromWeek,

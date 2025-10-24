@@ -1,20 +1,20 @@
-// Entry point for program details screen where program can be updated
+// Entry point for library details screen where library can be updated
 import 'package:flutter/material.dart';
-import '../../utils/program_utils.dart';
-import '../../widgets/program_details/assigned_selectors.dart';
-import '../../widgets/program_details/week_schedule.dart';
+import '../../utils/library_utils.dart';
+import '../../widgets/library_details/assigned_selectors.dart';
+import '../../widgets/library_details/week_schedule.dart';
 import '../../services/train_service.dart';
 
-class ProgramDetailsScreen extends StatefulWidget {
-  final String programId;
+class LibraryDetailsScreen extends StatefulWidget {
+  final String libraryId;
 
-  const ProgramDetailsScreen({super.key, required this.programId});
+  const LibraryDetailsScreen({super.key, required this.libraryId});
 
   @override
-  State<ProgramDetailsScreen> createState() => _ProgramDetailsScreenState();
+  State<LibraryDetailsScreen> createState() => _LibraryDetailsScreenState();
 }
 
-class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
+class _LibraryDetailsScreenState extends State<LibraryDetailsScreen> {
   String title = '';
   String description = '';
   int durationWeeks = 0;
@@ -35,32 +35,32 @@ class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProgramDataAndSchedule();
+    _loadLibraryDataAndSchedule();
   }
 
-  Future<void> _loadProgramDataAndSchedule() async {
+  Future<void> _loadLibraryDataAndSchedule() async {
     try {
-      final programData = await fetchCompleteProgramData(widget.programId, _trainService);
+      final libraryData = await fetchCompleteLibraryData(widget.libraryId, _trainService);
 
       setState(() {
-        title = programData.title;
-        description = programData.description;
-        durationWeeks = programData.durationWeeks;
+        title = libraryData.title;
+        description = libraryData.description;
+        durationWeeks = libraryData.durationWeeks;
 
-        allUsers = programData.allUsers;
-        allTeams = programData.allTeams;
+        allUsers = libraryData.allUsers;
+        allTeams = libraryData.allTeams;
 
-        selectedTeamIds = programData.selectedTeamIds;
-        manuallyAssignedUserIds = programData.manuallyAssignedUserIds;
-        selectedUserIds = programData.selectedUserIds;
+        selectedTeamIds = libraryData.selectedTeamIds;
+        manuallyAssignedUserIds = libraryData.manuallyAssignedUserIds;
+        selectedUserIds = libraryData.selectedUserIds;
 
-        schedule = programData.schedule;
-        workoutsById = programData.workoutsById;
+        schedule = libraryData.schedule;
+        workoutsById = libraryData.workoutsById;
 
         isLoading = false;
       });
     } catch (e, stack) {
-      print('❌ Error loading program data and schedule: $e');
+      print('❌ Error loading library data and schedule: $e');
       print(stack);
       setState(() {
         isLoading = false;
@@ -104,8 +104,8 @@ class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
   }
 
   Future<void> _saveAssignment() async {
-    await _trainService.assignProgramToTeamsAndUsers(
-      programId: widget.programId,
+    await _trainService.assignLibraryToTeamsAndUsers(
+      libraryId: widget.libraryId,
       teamIds: selectedTeamIds.toList(),
       userIds: manuallyAssignedUserIds.toList(),
     );
@@ -143,7 +143,7 @@ class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
             const SizedBox(height: 32),
             WeekSchedule(
               durationWeeks: durationWeeks,
-              programId: widget.programId,
+              libraryId: widget.libraryId,
               schedule: schedule,
               workoutsById: workoutsById,
             ),

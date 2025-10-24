@@ -1,19 +1,19 @@
-// Entry point for programming screen
+// Entry point for library screen
 import 'package:flutter/material.dart';
-import '../../widgets/programs/add_program_sidebar.dart';
-import '../../widgets/programs/programs_list.dart';
+import '../../widgets/libraries/add_library_sidebar.dart';
+import '../../widgets/libraries/libraries_list.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/custom_button.dart';
 
-class ProgramScreen extends StatefulWidget {
+class LibraryScreen extends StatefulWidget {
   final Map<String, dynamic>? userData;
-  const ProgramScreen({super.key, this.userData});
+  const LibraryScreen({super.key, this.userData});
 
   @override
-  State<ProgramScreen> createState() => _ProgramScreenState();
+  State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _ProgramScreenState extends State<ProgramScreen> {
+class _LibraryScreenState extends State<LibraryScreen> {
   bool showSidebar = false;
 
   void toggleSidebar() {
@@ -39,17 +39,17 @@ class _ProgramScreenState extends State<ProgramScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'All Programs',
+                    'All Libraries',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   CustomButton(
-                    text: '+ Program',
+                    text: '+ Library',
                     onPressed: toggleSidebar,
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              const Expanded(child: ProgramsList()),
+              const Expanded(child: LibrariesList()),
             ],
           ),
         ),
@@ -58,7 +58,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
         if (showSidebar)
           Align(
             alignment: Alignment.centerRight,
-            child: AddProgramSidebar(
+            child: AddLibrarySidebar(
               onCancel: toggleSidebar,
               createdByUserId: userId,
             ),

@@ -1,30 +1,30 @@
-// Right sidebar form for programs_screen
+// Right sidebar form for libraries_screen
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../custom_button.dart';
 
-class AddProgramSidebar extends StatefulWidget {
+class AddLibrarySidebar extends StatefulWidget {
   final VoidCallback onCancel;
   final String createdByUserId;
 
-  const AddProgramSidebar({
+  const AddLibrarySidebar({
     super.key,
     required this.onCancel,
     required this.createdByUserId,
   });
 
   @override
-  State<AddProgramSidebar> createState() => _AddProgramSidebarState();
+  State<AddLibrarySidebar> createState() => _AddLibrarySidebarState();
 }
 
-class _AddProgramSidebarState extends State<AddProgramSidebar> {
+class _AddLibrarySidebarState extends State<AddLibrarySidebar> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController durationWeeksController = TextEditingController();
 
   bool isLoading = false;
 
-  Future<void> addProgram() async {
+  Future<void> addLibrary() async {
     setState(() {
       isLoading = true;
     });
@@ -41,7 +41,7 @@ class _AddProgramSidebarState extends State<AddProgramSidebar> {
       schedule['week$week'] = days;
     }
 
-    await FirebaseFirestore.instance.collection('programs').add({
+    await FirebaseFirestore.instance.collection('libraries').add({
       'title': titleController.text.trim(),
       'description': descriptionController.text.trim(),
       'durationWeeks': durationWeeks,
@@ -77,7 +77,7 @@ class _AddProgramSidebarState extends State<AddProgramSidebar> {
               children: [
                 const Expanded(
                   child: Text(
-                    'Add Program',
+                    'Add Library',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -126,7 +126,7 @@ class _AddProgramSidebarState extends State<AddProgramSidebar> {
                       )
                     : CustomButton(
                         text: 'Add',
-                        onPressed: addProgram,
+                        onPressed: addLibrary,
                       ),
               ],
             )

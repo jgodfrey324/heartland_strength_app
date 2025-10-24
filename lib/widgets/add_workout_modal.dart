@@ -1,4 +1,4 @@
-// Modal pops up when adding a workout to a program or schedule
+// Modal pops up when adding a workout to a library or schedule
 import 'package:flutter/material.dart';
 import '../services/train_service.dart';
 import 'custom_button.dart';
@@ -8,14 +8,14 @@ import 'movement_card.dart';
 
 
 class AddWorkoutModal extends StatefulWidget {
-  final String programId;
+  final String libraryId;
   final int weekIndex;
   final int dayIndex;
   final String? existingWorkoutId;
 
   const AddWorkoutModal({
     Key? key,
-    required this.programId,
+    required this.libraryId,
     required this.weekIndex,
     required this.dayIndex,
     this.existingWorkoutId,
@@ -93,7 +93,7 @@ class _AddWorkoutModalState extends State<AddWorkoutModal> {
       title: _title,
       details: _details,
       movements: _movements,
-      programId: widget.programId,
+      libraryId: widget.libraryId,
       weekIndex: widget.weekIndex,
       dayIndex: widget.dayIndex,
     );

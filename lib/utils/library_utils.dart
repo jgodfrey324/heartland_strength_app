@@ -137,20 +137,20 @@ Future<Map<String, List<String>>> fetchAssignedNames(Map<String, dynamic> assign
 
 /// Adds a workout ID to the schedule array in Firestore for a given week and day.
 Future<void> addWorkoutToSchedule({
-  required String programId,
+  required String libraryId,
   required int weekIndex,
   required int dayIndex,
   required String workoutId,
 }) async {
   final scheduleField = 'schedule.week$weekIndex.day$dayIndex';
-  final programRef = FirebaseFirestore.instance.collection('programs').doc(programId);
+  final libraryRef = FirebaseFirestore.instance.collection('libraries').doc(libraryId);
 
-  await programRef.update({
+  await libraryRef.update({
     scheduleField: FieldValue.arrayUnion([workoutId]),
   });
 }
 
-class ProgramData {
+class LibraryData {
   final String title;
   final String description;
   final int durationWeeks;
@@ -165,7 +165,7 @@ class ProgramData {
   final Map<String, Map<String, List<String>>> schedule; // week -> day -> workouts
   final Map<String, Workout> workoutsById;
 
-  ProgramData({
+  LibraryData({
     required this.title,
     required this.description,
     required this.durationWeeks,
@@ -179,17 +179,17 @@ class ProgramData {
   });
 }
 
-/// Fetch all program-related data, including assignments and schedule
-/// Returns a [ProgramData] object encapsulating everything needed for the UI.
-Future<ProgramData> fetchCompleteProgramData(
-  String programId,
+/// Fetch all library-related data, including assignments and schedule
+/// Returns a [LibraryData] object encapsulating everything needed for the UI.
+Future<LibraryData> fetchCompleteLibraryData(
+  String libraryId,
   TrainService trainService,
 ) async {
-  final progDoc = await FirebaseFirestore.instance.collection('programs').doc(programId).get();
-  final prog = progDoc.data();
+  final libDoc = await FirebaseFirestore.instance.collection('libraries').doc(libraryId).get();
+  final lib = libDoc.data();
 
-  if (prog == null) {
-    throw Exception('Program not found');
+  if (lib == null) {
+    throw Exception('Library not found');
   }
 
   final teamSnap = await FirebaseFirestore.instance.collection('teams').get();
@@ -221,8 +221,8 @@ Future<ProgramData> fetchCompleteProgramData(
     };
   }).toList();
 
-  final selectedTeamIds = Set<String>.from(prog['assignedTo']?['teams'] ?? []);
-  final manuallyAssignedUserIds = Set<String>.from(prog['assignedTo']?['users'] ?? []);
+  final selectedTeamIds = Set<String>.from(lib['assignedTo']?['teams'] ?? []);
+  final manuallyAssignedUserIds = Set<String>.from(lib['assignedTo']?['users'] ?? []);
 
   final selectedUserIds = computeSelectedUserIds(
     allTeams: allTeams,
@@ -230,12 +230,12 @@ Future<ProgramData> fetchCompleteProgramData(
     manuallyAssignedUserIds: manuallyAssignedUserIds,
   );
 
-  final durationWeeks = prog['durationWeeks'] as int? ?? 0;
-  final title = prog['title'] as String? ?? '';
-  final description = prog['description'] as String? ?? '';
+  final durationWeeks = lib['durationWeeks'] as int? ?? 0;
+  final title = lib['title'] as String? ?? '';
+  final description = lib['description'] as String? ?? '';
 
   // Fetch schedule & workouts via trainService
-  final schedule = await trainService.fetchProgramSchedule(programId);
+  final schedule = await trainService.fetchLibrarySchedule(libraryId);
 
   final workoutIds = <String>{};
   schedule.forEach((_, dayMap) {
@@ -253,7 +253,7 @@ Future<ProgramData> fetchCompleteProgramData(
   // If trainService returns Map<String, Workout>, assign directly:
   final workoutsById = workoutsByIdRaw;
 
-  return ProgramData(
+  return LibraryData(
     title: title,
     description: description,
     durationWeeks: durationWeeks,

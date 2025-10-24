@@ -1,12 +1,12 @@
-// List of current programs. Can delete from list. Clicking to get to program details screen
+// List of current libraries. Can delete from list. Clicking to get to library details screen
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:heartlandstrengthapp/widgets/programs/assigned_to_dialog.dart';
-import '../../screens/web_specific/program_details_screen.dart';
-import '../../utils/program_utils.dart';
+import 'package:heartlandstrengthapp/widgets/libraries/assigned_to_dialog.dart';
+import '../../screens/web_specific/library_details_screen.dart';
+import '../../utils/library_utils.dart';
 
-class ProgramsList extends StatelessWidget {
-  const ProgramsList({super.key});
+class LibrariesList extends StatelessWidget {
+  const LibrariesList({super.key});
 
   Future<void> _showAssignedDialog(BuildContext context, Map<String, dynamic>? assignedTo) async {
     assignedTo ??= {'users': [], 'teams': []};
@@ -18,12 +18,12 @@ class ProgramsList extends StatelessWidget {
     );
   }
 
-  Future<void> _deleteProgram(BuildContext context, String programId, String programTitle) async {
+  Future<void> _deleteLibrary(BuildContext context, String libraryId, String libraryTitle) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Program'),
-        content: Text('Are you sure you want to delete "$programTitle"?'),
+        title: const Text('Delete Library'),
+        content: Text('Are you sure you want to delete "$libraryTitle"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -38,7 +38,7 @@ class ProgramsList extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      await FirebaseFirestore.instance.collection('programs').doc(programId).delete();
+      await FirebaseFirestore.instance.collection('libraries').doc(libraryId).delete();
     }
   }
 
@@ -46,7 +46,7 @@ class ProgramsList extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('programs')
+          .collection('libraries')
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
@@ -55,15 +55,15 @@ class ProgramsList extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No programs available.'));
+          return const Center(child: Text('No libraries available.'));
         }
 
-        final programs = snapshot.data!.docs;
+        final libraries = snapshot.data!.docs;
 
         return ListView.builder(
-          itemCount: programs.length,
+          itemCount: libraries.length,
           itemBuilder: (context, index) {
-            final doc = programs[index];
+            final doc = libraries[index];
             final data = doc.data() as Map<String, dynamic>;
 
             return Card(
@@ -74,7 +74,7 @@ class ProgramsList extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProgramDetailsScreen(programId: doc.id),
+                      builder: (_) => LibraryDetailsScreen(libraryId: doc.id),
                     ),
                   );
                 },
@@ -82,17 +82,17 @@ class ProgramsList extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Tooltip(
-                      message: 'Program assigned to',
+                      message: 'Library assigned to',
                       child: IconButton(
                         icon: const Icon(Icons.group),
                         onPressed: () => _showAssignedDialog(context, data['assignedTo']),
                       ),
                     ),
                     Tooltip(
-                      message: 'Delete Program',
+                      message: 'Delete Library',
                       child: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.redAccent),
-                        onPressed: () => _deleteProgram(context, doc.id, data['title'] ?? 'Untitled Program'),
+                        onPressed: () => _deleteLibrary(context, doc.id, data['title'] ?? 'Untitled Library'),
                       ),
                     ),
                   ],
