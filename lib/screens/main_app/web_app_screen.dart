@@ -5,6 +5,7 @@ import 'package:heartlandstrengthapp/screens/profile_screen.dart';
 import 'package:heartlandstrengthapp/screens/web_specific/analyze_screen.dart';
 import 'package:heartlandstrengthapp/screens/web_specific/manage_screen.dart';
 import 'package:heartlandstrengthapp/screens/web_specific/library_screen.dart';
+import 'package:heartlandstrengthapp/screens/web_specific/program_screen.dart';
 
 class WebAppScreen extends StatefulWidget {
   final String userId;
@@ -36,6 +37,7 @@ class _WebAppScreenState extends State<WebAppScreen> {
     "Coach's Corner",
     "Analyze",
     "Announcements",
+    "Program",
     "Library",
     "Manage",
     "Profile",
@@ -46,6 +48,7 @@ class _WebAppScreenState extends State<WebAppScreen> {
         CoachCornerScreen(),
         AnalyzeScreen(),
         AnnouncementsScreen(userData: widget.userData),
+        ProgramScreen(),
         LibraryScreen(),
         ManageScreen(),
         ProfileScreen(userData: widget.userData),

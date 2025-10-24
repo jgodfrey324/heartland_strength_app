@@ -1,5 +1,4 @@
 // Main screen for coach's corner content
-// Entry point for programming screen
 import 'package:flutter/material.dart';
 
 class CoachCornerScreen extends StatelessWidget {
