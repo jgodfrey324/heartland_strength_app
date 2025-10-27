@@ -40,22 +40,41 @@ class _LibraryDetailsScreenState extends State<LibraryDetailsScreen> {
 
   Future<void> _loadLibraryDataAndSchedule() async {
     try {
-      final libraryData = await fetchCompleteLibraryData(widget.libraryId, _trainService);
+      final libraryData = await fetchCompleteLibraryData(widget.libraryId);
+
+      // Convert schedule safely
+      final convertedSchedule = <String, Map<String, List<String>>>{};
+      (libraryData.schedule).forEach((weekKey, dayMap) {
+        convertedSchedule[weekKey] = (dayMap as Map<String, dynamic>).map(
+          (dayKey, workoutsDynamic) => MapEntry(
+            dayKey,
+            List<String>.from(workoutsDynamic),
+          ),
+        );
+      });
+
+      // Convert raw workout data to Map<String, Workout> (forEach style)
+      final convertedWorkoutsById = <String, Workout>{};
+      (libraryData.workoutsById as Map<String, dynamic>? ?? {}).forEach((key, value) {
+        final mapValue = value as Map<String, dynamic>;
+        convertedWorkoutsById[key] = Workout.fromMap(mapValue, id: key);
+      });
+
 
       setState(() {
         title = libraryData.title;
         description = libraryData.description;
         durationWeeks = libraryData.durationWeeks;
 
-        allUsers = libraryData.allUsers;
-        allTeams = libraryData.allTeams;
+        allUsers = libraryData.allUsers.cast<Map<String, Object>>();
+        allTeams = libraryData.allTeams.cast<Map<String, Object>>();
 
         selectedTeamIds = libraryData.selectedTeamIds;
         manuallyAssignedUserIds = libraryData.manuallyAssignedUserIds;
         selectedUserIds = libraryData.selectedUserIds;
 
-        schedule = libraryData.schedule;
-        workoutsById = libraryData.workoutsById;
+        schedule = convertedSchedule;
+        workoutsById = convertedWorkoutsById;
 
         isLoading = false;
       });
@@ -67,7 +86,6 @@ class _LibraryDetailsScreenState extends State<LibraryDetailsScreen> {
       });
     }
   }
-
 
   void _onTeamToggle(String teamId) {
     setState(() {

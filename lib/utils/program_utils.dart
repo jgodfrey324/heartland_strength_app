@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:heartlandstrengthapp/services/train_service.dart';
 import 'package:heartlandstrengthapp/services/user_services.dart';
 
 final UserService _userService = UserService();
@@ -58,26 +57,27 @@ Set<String> computeSelectedUserIds({
   return userIdsFromTeams.union(manuallyAssignedUserIds);
 }
 
-/// Adds a workout ID to the schedule array in Firestore for a given week and day
-Future<void> addWorkoutToSchedule({
-  required String libraryId,
-  required int weekIndex,
-  required int dayIndex,
+/// Adds a workout ID to the program schedule for a specific date
+Future<void> addWorkoutToProgramSchedule({
+  required String programId,
+  required String date, // e.g., '2025-10-27'
   required String workoutId,
 }) async {
-  final scheduleField = 'schedule.week$weekIndex.day$dayIndex';
-  final libraryRef = FirebaseFirestore.instance.collection('libraries').doc(libraryId);
+  final programRef = FirebaseFirestore.instance.collection('programs').doc(programId);
 
-  await libraryRef.update({
-    scheduleField: FieldValue.arrayUnion([workoutId]),
-  });
+  // Use FieldValue.arrayUnion to add the workout ID to the array for that date
+  await programRef.set({
+    'schedule': {
+      date: FieldValue.arrayUnion([workoutId]),
+    },
+  }, SetOptions(merge: true));
 }
 
-class LibraryData {
-  final String libraryId;
+/// ProgramData class (similar to LibraryData but without durationWeeks)
+class ProgramData {
+  final String programId;
   final String title;
   final String description;
-  final int durationWeeks;
   final List<Map<String, dynamic>> allUsers;
   final List<Map<String, Object>> allTeams;
   final Set<String> selectedTeamIds;
@@ -87,11 +87,10 @@ class LibraryData {
   final Map<String, dynamic> workoutsById;
   final Map<String, List<String>> assignedNames;
 
-  LibraryData({
-    required this.libraryId,
+  ProgramData({
+    required this.programId,
     required this.title,
     required this.description,
-    required this.durationWeeks,
     required this.allUsers,
     required this.allTeams,
     required this.selectedTeamIds,
@@ -103,9 +102,12 @@ class LibraryData {
   });
 }
 
-Future<LibraryData> fetchCompleteLibraryData(String libraryId) async {
-  final doc = await FirebaseFirestore.instance.collection('libraries').doc(libraryId).get();
-  if (!doc.exists) throw Exception('Library not found');
+/// Fetch all program data including metadata and schedule
+Future<ProgramData> fetchCompleteProgramData(String programId) async {
+  final doc = await FirebaseFirestore.instance.collection('programs').doc(programId).get();
+  if (!doc.exists) {
+    throw Exception('Program not found');
+  }
 
   final data = doc.data() ?? {};
 
@@ -113,6 +115,7 @@ Future<LibraryData> fetchCompleteLibraryData(String libraryId) async {
   final assignedNames = await _userService.fetchAssignedNamesWithTeamMembers(assignedTo);
 
   final allUsers = await _userService.fetchAllUsers();
+
   final allTeams = await _userService.fetchAllTeams();
 
   final selectedTeamIds = Set<String>.from(assignedTo['teams'] ?? []);
@@ -124,35 +127,17 @@ Future<LibraryData> fetchCompleteLibraryData(String libraryId) async {
     manuallyAssignedUserIds: manuallyAssignedUserIds,
   );
 
-  // Convert workoutsById to Map<String, Workout>
-  final rawWorkouts = data['workoutsById'] as Map<String, dynamic>? ?? {};
-  final workoutsById = rawWorkouts.map<String, Workout>((key, value) {
-    final mapValue = value as Map<String, dynamic>;
-    return MapEntry(key, Workout.fromMap(mapValue, id: key));
-  });
-
-  // Convert schedule safely (Map<String, Map<String, List<String>>>)
-  final rawSchedule = data['schedule'] as Map<String, dynamic>? ?? {};
-  final schedule = rawSchedule.map<String, Map<String, List<String>>>((weekKey, weekValue) {
-    final dayMap = weekValue as Map<String, dynamic>;
-    return MapEntry(
-      weekKey,
-      dayMap.map((dayKey, workoutIds) => MapEntry(dayKey, List<String>.from(workoutIds))),
-    );
-  });
-
-  return LibraryData(
-    libraryId: libraryId,
-    title: data['title'] ?? 'Untitled Library',
+  return ProgramData(
+    programId: programId,
+    title: data['title'] ?? 'Untitled Program',
     description: data['description'] ?? '',
-    durationWeeks: data['durationWeeks'] ?? 0,
     allUsers: allUsers,
     allTeams: allTeams,
     selectedTeamIds: selectedTeamIds,
     manuallyAssignedUserIds: manuallyAssignedUserIds,
     selectedUserIds: selectedUserIds,
-    schedule: schedule,
-    workoutsById: workoutsById,
+    schedule: data['schedule'] ?? {},
+    workoutsById: data['workoutsById'] ?? {},
     assignedNames: assignedNames,
   );
 }

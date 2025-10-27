@@ -54,6 +54,26 @@ class Workout {
       rethrow;
     }
   }
+  factory Workout.fromMap(Map<String, dynamic> data, {required String id}) {
+    final rawMovements = data['movements'] as List<dynamic>? ?? [];
+    final movements = rawMovements.map((m) {
+      if (m is Map<String, dynamic>) {
+        return WorkoutMovement.fromMap(m);
+      }
+      throw Exception('Invalid movement data');
+    }).toList();
+
+    return Workout(
+      id: id,
+      title: data['title'] as String? ?? '',
+      details: data['details'] as String? ?? '',
+      date: data['date'] != null
+          ? (data['date'] as Timestamp).toDate()
+          : DateTime.now(),
+      coachId: data['coachId'] as String? ?? '',
+      movements: movements,
+    );
+  }
 }
 
 class Movement {
