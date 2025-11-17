@@ -1,4 +1,4 @@
-// Right sidebar form for program_screen
+// Right sidebar for add program screen
 import 'package:flutter/material.dart';
 import '../custom_button.dart';
 import '../../services/program_services.dart';
@@ -21,63 +21,27 @@ class _AddProgramSidebarState extends State<AddProgramSidebar> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  // For building the dynamic date → workout list structure
-  Map<String, List<String>> schedule = {};
-  DateTime? selectedDate;
-  final TextEditingController workoutIdController = TextEditingController();
+  // schedule is ALWAYS empty
+  final Map<String, List<String>> schedule = {};
 
   bool isLoading = false;
-
-  /// Adds a workout ID to the selected day
-  void addWorkoutToSelectedDate() {
-    if (selectedDate == null || workoutIdController.text.trim().isEmpty) return;
-
-    final dateKey =
-        "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}";
-
-    setState(() {
-      schedule.putIfAbsent(dateKey, () => []);
-      schedule[dateKey]!.add(workoutIdController.text.trim());
-      workoutIdController.clear();
-    });
-  }
 
   /// Handles saving by calling the service function
   Future<void> handleAddProgram() async {
     if (titleController.text.trim().isEmpty) return;
 
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     await addProgramToFirestore(
       title: titleController.text,
       description: descriptionController.text,
       createdByUserId: widget.createdByUserId,
-      schedule: schedule,
+      schedule: schedule, // always empty {}
     );
 
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
 
     widget.onCancel();
-  }
-
-  /// Opens the date picker to choose a calendar date
-  Future<void> pickDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
   }
 
   @override
@@ -113,62 +77,14 @@ class _AddProgramSidebarState extends State<AddProgramSidebar> {
               decoration: const InputDecoration(labelText: 'Title'),
             ),
             const SizedBox(height: 12),
+
             TextField(
               controller: descriptionController,
               decoration: const InputDecoration(labelText: 'Description'),
               maxLines: 3,
             ),
-            const SizedBox(height: 24),
 
-            // Schedule builder (basic version)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    selectedDate != null
-                        ? 'Selected: ${selectedDate!.toLocal().toString().split(' ')[0]}'
-                        : 'No date selected',
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.calendar_today),
-                  onPressed: () => pickDate(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            if (selectedDate != null) ...[
-              TextField(
-                controller: workoutIdController,
-                decoration: const InputDecoration(
-                  labelText: 'Add Workout ID for this date',
-                ),
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: addWorkoutToSelectedDate,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Workout'),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView(
-                children: schedule.entries.map((entry) {
-                  return Card(
-                    child: ListTile(
-                      title: Text(entry.key),
-                      subtitle: Text(entry.value.join(', ')),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
+            const Spacer(),
 
             // Buttons
             Row(

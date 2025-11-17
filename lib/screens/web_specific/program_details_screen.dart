@@ -142,12 +142,15 @@ class _ProgramDetailsScreenState extends State<ProgramDetailsScreen> {
             const SizedBox(height: 32),
 
             // Month calendar schedule view
-            MonthSchedule(
-              programId: widget.programId,
-              schedule: (schedule).map(
-                (key, value) => MapEntry(key, List<String>.from(value)),
+            SizedBox(
+              height: 500, // or MediaQuery.of(context).size.height * 0.65
+              child: MonthSchedule(
+                programId: widget.programId,
+                schedule: schedule.map(
+                  (key, value) => MapEntry(key, List<String>.from(value)),
+                ),
+                workoutsById: workoutsById,
               ),
-              workoutsById: workoutsById,
             ),
           ],
         ),

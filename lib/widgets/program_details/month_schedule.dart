@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
 
-class MonthSchedule extends StatelessWidget {
+class MonthSchedule extends StatefulWidget {
   final String programId;
   final Map<String, List<String>> schedule;
   final Map<String, dynamic> workoutsById;
@@ -13,62 +14,84 @@ class MonthSchedule extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    // Sort schedule by date
-    final sortedDates = schedule.keys.toList()
-      ..sort((a, b) => DateTime.parse(a).compareTo(DateTime.parse(b)));
+  State<MonthSchedule> createState() => _MonthScheduleState();
+}
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: sortedDates.map((dateKey) {
-        final workouts = schedule[dateKey] ?? [];
-        return Container(
-          constraints: const BoxConstraints(
-            minWidth: 250,
-            minHeight: 500,
+class _MonthScheduleState extends State<MonthSchedule> {
+  late final Map<DateTime, List<String>> events;
+  DateTime focusedDay = DateTime.now();
+  DateTime? selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    events = widget.schedule.map((key, workouts) {
+      final date = DateTime.parse(key);
+      return MapEntry(DateTime(date.year, date.month, date.day), workouts);
+    });
+  }
+
+  List<String> _getEventsForDay(DateTime day) {
+    final clean = DateTime(day.year, day.month, day.day);
+    return events[clean] ?? [];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TableCalendar(
+          firstDay: DateTime(2020),
+          lastDay: DateTime(2100),
+          focusedDay: focusedDay,
+          selectedDayPredicate: (day) =>
+              selectedDay != null &&
+              day.year == selectedDay!.year &&
+              day.month == selectedDay!.month &&
+              day.day == selectedDay!.day,
+
+          eventLoader: _getEventsForDay,
+
+          calendarFormat: CalendarFormat.month,
+
+          onDaySelected: (selected, focused) {
+            setState(() {
+              selectedDay = selected;
+              focusedDay = focused;
+            });
+          },
+
+          onPageChanged: (focused) {
+            focusedDay = focused;
+          },
+
+          calendarStyle: const CalendarStyle(
+            todayDecoration:
+                BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
           ),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                dateKey,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const Divider(),
-              Expanded(
-                child: workouts.isEmpty
-                    ? const Center(child: Text('No workouts'))
-                    : ListView.builder(
-                        itemCount: workouts.length,
-                        itemBuilder: (context, i) {
-                          final workoutId = workouts[i];
-                          final workout = workoutsById[workoutId];
-                          final name = workout?['title'] ?? 'Workout $workoutId';
-                          return Card(
-                            color: Colors.white,
-                            child: ListTile(
-                              dense: true,
-                              title: Text(name),
-                              subtitle: Text('ID: $workoutId'),
-                            ),
-                          );
-                        },
+        ),
+
+        const SizedBox(height: 16),
+
+        /// Workout list for selected day
+        Expanded(
+          child: selectedDay == null
+              ? const Center(child: Text("Select a day"))
+              : ListView(
+                  children: _getEventsForDay(selectedDay!).map((workoutId) {
+                    final workout = widget.workoutsById[workoutId];
+                    final name =
+                        workout?['title'] ?? 'Workout $workoutId';
+                    return Card(
+                      child: ListTile(
+                        title: Text(name),
+                        subtitle: Text('ID: $workoutId'),
                       ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+                    );
+                  }).toList(),
+                ),
+        ),
+      ],
     );
   }
 }
